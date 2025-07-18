@@ -20,9 +20,10 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Building2, label: 'Clientes', path: '/clients' },
+    { icon: MessageSquare, label: 'Interações', path: '/interactions' },
     { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
     { icon: Calendar, label: 'Calendário', path: '/calendar' },
-    { icon: MessageSquare, label: 'Chat', path: '/chat' },
     { icon: BarChart3, label: 'Relatórios', path: '/reports' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
@@ -44,12 +45,12 @@ const Sidebar = () => {
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src={user?.avatar} />
-            <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+            <AvatarImage src={(user as any)?.user_metadata?.avatar_url} />
+            <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-medium text-gray-900">{user?.name}</p>
-            <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
+            <p className="font-medium text-gray-900">{(user as any)?.user_metadata?.name || user?.email?.split('@')[0]}</p>
+            <p className="text-sm text-gray-500">Usuário</p>
           </div>
         </div>
       </div>
