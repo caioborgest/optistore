@@ -8,6 +8,13 @@ import { AuthProvider } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// PWA types
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (

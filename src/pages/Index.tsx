@@ -12,6 +12,7 @@ import Reports from '../components/Reports';
 import Settings from '../components/Settings';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../hooks/useAuth';
+import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
@@ -37,6 +38,7 @@ const Index = () => {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
+      <PWAInstallPrompt />
     </div>
   );
 };
