@@ -268,9 +268,9 @@ CREATE POLICY "Users can update their own profile" ON public.users
 CREATE POLICY "Users can view colleagues from same company" ON public.users
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM public.users current_user
-            WHERE current_user.id = auth.uid()
-            AND current_user.company_id = users.company_id
+            SELECT 1 FROM public.users u
+            WHERE u.id = auth.uid()
+            AND u.company_id = users.company_id
         )
     );
 
