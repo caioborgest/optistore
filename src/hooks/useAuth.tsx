@@ -320,25 +320,59 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const registerCompany = async (companyData: any) => {
-    // Implementar registro de empresa usando CompanyService
-    const { CompanyService } = await import('@/services/companyService');
-    const { company, error } = await CompanyService.registerCompany(companyData);
-    
-    if (error) {
-      const errorMessage = translateAuthError(error.message);
+    try {
+      console.log('🎯 useAuth: Iniciando registro de empresa');
+      
+      // Implementar registro de empresa usando CompanyService
+      const { CompanyService } = await import('@/services/companyService');
+      const { company, error } = await CompanyService.registerCompany(companyData);
+      
+      console.log('📊 useAuth: Resultado do registro:', { company: !!company, error });
+      
+      if (error) {
+        console.error('❌ useAuth: Erro no registro:', error);
+        
+        let errorMessage = 'Erro desconhecido ao registrar empresa';
+        
+        if (error instanceof Error) {
+          errorMessage = translateAuthError(error.message);
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage = translateAuthError(error.message);
+        } else if (error?.code) {
+          errorMessage = `Erro do banco de dados: ${error.code}`;
+        }
+        
+        toast({
+          title: "Erro ao registrar empresa",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        return { error: error instanceof Error ? error : new Error(errorMessage) };
+      } else {
+        console.log('✅ useAuth: Empresa registrada com sucesso');
+        toast({
+          title: "Empresa registrada!",
+          description: "Sua empresa foi criada com sucesso. Verifique seu email para confirmar a conta.",
+        });
+        
+        return { error: null };
+      }
+    } catch (catchError) {
+      console.error('💥 useAuth: Erro geral no registro:', catchError);
+      
+      const errorMessage = catchError instanceof Error ? catchError.message : 'Erro inesperado';
+      
       toast({
         title: "Erro ao registrar empresa",
         description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Empresa registrada!",
-        description: "Sua empresa foi criada com sucesso. Verifique seu email para confirmar a conta.",
-      });
+      
+      return { error: catchError instanceof Error ? catchError : new Error(errorMessage) };
     }
-
-    return { error };
   };
 
   const registerWithInvite = async (inviteData: any) => {

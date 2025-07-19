@@ -51,50 +51,89 @@ export class CompanyService {
    */
   static async registerCompany(data: CompanyRegistration): Promise<{ company: Company | null; error: any }> {
     try {
+      console.log('🚀 Iniciando registro de empresa:', { 
+        name: data.name, 
+        email: data.email, 
+        adminEmail: data.adminEmail 
+      });
+
+      // Teste de conexão com Supabase
+      const { data: testConnection, error: testError } = await supabase
+        .from('companies')
+        .select('count')
+        .limit(1);
+      
+      console.log('🔗 Teste de conexão:', { testConnection, testError });
+
+      if (testError) {
+        console.error('❌ Erro de conexão com Supabase:', testError);
+        return { company: null, error: testError };
+      }
+
       // Gerar código de convite único
       let inviteCode = this.generateInviteCode();
       let isUnique = false;
       let attempts = 0;
 
+      console.log('🎲 Gerando código de convite:', inviteCode);
+
       // Garantir que o código seja único
       while (!isUnique && attempts < 10) {
-        const { data: existing } = await supabase
+        const { data: existing, error: checkError } = await supabase
           .from('companies')
           .select('id')
           .eq('invite_code', inviteCode)
           .single();
 
-        if (!existing) {
+        console.log('🔍 Verificando código único:', { inviteCode, existing, checkError });
+
+        if (checkError && checkError.code === 'PGRST116') {
+          // Código não encontrado, é único
+          isUnique = true;
+        } else if (!existing) {
           isUnique = true;
         } else {
           inviteCode = this.generateInviteCode();
           attempts++;
+          console.log('🔄 Tentativa', attempts, 'novo código:', inviteCode);
         }
       }
 
       if (!isUnique) {
-        return { company: null, error: 'Não foi possível gerar um código único' };
+        console.error('❌ Não foi possível gerar código único após 10 tentativas');
+        return { company: null, error: new Error('Não foi possível gerar um código único') };
       }
 
+      console.log('✅ Código único gerado:', inviteCode);
+
       // Criar empresa
+      const companyInsertData = {
+        name: data.name,
+        email: data.email,
+        invite_code: inviteCode,
+        phone: data.phone || null,
+        address: data.address || null
+      };
+
+      console.log('📝 Inserindo empresa:', companyInsertData);
+
       const { data: company, error: companyError } = await supabase
         .from('companies')
-        .insert({
-          name: data.name,
-          email: data.email,
-          invite_code: inviteCode,
-          phone: data.phone,
-          address: data.address
-        })
+        .insert(companyInsertData)
         .select()
         .single();
 
+      console.log('🏢 Resultado inserção empresa:', { company, companyError });
+
       if (companyError) {
+        console.error('❌ Erro ao criar empresa:', companyError);
         return { company: null, error: companyError };
       }
 
+      console.log('✅ Empresa criada com sucesso:', company.id);
+
       // Criar usuário administrador da empresa
-      const { data: authUser, error: authError } = await supabase.auth.signUp({
+      const authData = {
         email: data.adminEmail,
         password: data.password,
         options: {
@@ -104,9 +143,23 @@ export class CompanyService {
             is_company_admin: true
           }
         }
+      };
+
+      console.log('👤 Criando usuário administrador:', { 
+        email: authData.email, 
+        metadata: authData.options.data 
+      });
+
+      const { data: authUser, error: authError } = await supabase.auth.signUp(authData);
+
+      console.log('🔐 Resultado criação usuário:', { 
+        user: authUser.user?.id, 
+        session: !!authUser.session,
+        error: authError 
       });
 
       if (authError) {
+        console.error('❌ Erro ao criar usuário, fazendo rollback da empresa');
         // Rollback: deletar empresa se falhou ao criar usuário
         await supabase.from('companies').delete().eq('id', company.id);
         return { company: null, error: authError };
@@ -114,25 +167,34 @@ export class CompanyService {
 
       // Criar perfil do usuário administrador
       if (authUser.user) {
+        const profileData = {
+          id: authUser.user.id,
+          company_id: company.id,
+          email: data.adminEmail,
+          name: data.adminName,
+          role: 'gerente' as const,
+          sector: 'Administração',
+          is_company_admin: true
+        };
+
+        console.log('📋 Criando perfil do usuário:', profileData);
+
         const { error: profileError } = await supabase
           .from('users')
-          .insert({
-            id: authUser.user.id,
-            company_id: company.id,
-            email: data.adminEmail,
-            name: data.adminName,
-            role: 'gerente',
-            sector: 'Administração',
-            is_company_admin: true
-          });
+          .insert(profileData);
+
+        console.log('👤 Resultado criação perfil:', { profileError });
 
         if (profileError) {
-          console.error('Erro ao criar perfil do administrador:', profileError);
+          console.error('⚠️ Erro ao criar perfil do administrador:', profileError);
+          // Não fazemos rollback aqui pois o usuário foi criado com sucesso
         }
       }
 
+      console.log('🎉 Registro de empresa concluído com sucesso!');
       return { company, error: null };
     } catch (error) {
+      console.error('💥 Erro geral no registro de empresa:', error);
       return { company: null, error };
     }
   }
