@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   const { logout } = useAuth();
 
   // Menu items baseados no papel do usuário
-  const getMenuItems = (role: string) => {
+  const getMenuItems = (role: string, isCompanyAdmin: boolean) => {
     const baseItems = [
       { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
       { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
@@ -38,12 +38,18 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
     ];
 
     if (role === 'gerente') {
-      return [
+      const managerItems = [
         ...baseItems,
         { icon: Users, label: 'Usuários', path: '/users' },
         { icon: BarChart3, label: 'Relatórios', path: '/reports' },
         { icon: Settings, label: 'Configurações', path: '/settings' },
       ];
+
+      if (isCompanyAdmin) {
+        managerItems.push({ icon: Building2, label: 'Empresa', path: '/company' });
+      }
+
+      return managerItems;
     }
 
     if (role === 'supervisor') {
@@ -61,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
     ];
   };
 
-  const menuItems = getMenuItems(userProfile.role);
+  const menuItems = getMenuItems(userProfile.role, userProfile.is_company_admin);
 
   const getRoleIcon = (role: string) => {
     switch (role) {

@@ -3,15 +3,19 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/services/authService';
+import { Company } from '@/services/companyService';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   userProfile: UserProfile | null;
+  company: Company | null;
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string, sector: string, role?: 'gerente' | 'supervisor' | 'colaborador') => Promise<{ error: any }>;
+  registerCompany: (companyData: any) => Promise<{ error: any }>;
+  registerWithInvite: (inviteData: any) => Promise<{ error: any }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
   hasPermission: (resource: string, action: 'create' | 'read' | 'update' | 'delete', targetUserId?: string, targetSector?: string) => boolean;
@@ -23,20 +27,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Carregar perfil do usuário
+  // Carregar perfil do usuário e empresa
   const loadUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          companies (*)
+        `)
         .eq('id', userId)
         .single();
 
       if (!error && data) {
         setUserProfile(data);
+        setCompany(data.companies);
       }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
@@ -310,14 +319,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return translations[errorMessage] || errorMessage;
   };
 
+  const registerCompany = async (companyData: any) => {
+    // Implementar registro de empresa usando CompanyService
+    const { CompanyService } = await import('@/services/companyService');
+    const { company, error } = await CompanyService.registerCompany(companyData);
+    
+    if (error) {
+      const errorMessage = translateAuthError(error.message);
+      toast({
+        title: "Erro ao registrar empresa",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Empresa registrada!",
+        description: "Sua empresa foi criada com sucesso. Verifique seu email para confirmar a conta.",
+      });
+    }
+
+    return { error };
+  };
+
+  const registerWithInvite = async (inviteData: any) => {
+    // Implementar registro com convite usando CompanyService
+    const { CompanyService } = await import('@/services/companyService');
+    const { user: newUser, error } = await CompanyService.registerUserWithInvite(inviteData);
+    
+    if (error) {
+      const errorMessage = translateAuthError(error.message);
+      toast({
+        title: "Erro ao registrar com convite",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Cadastro realizado!",
+        description: "Bem-vindo à equipe! Verifique seu email para confirmar a conta.",
+      });
+    }
+
+    return { error };
+  };
+
   const value = {
     user,
     session,
     userProfile,
+    company,
     isAuthenticated: !!user,
     loading,
     signIn,
     signUp,
+    registerCompany,
+    registerWithInvite,
     logout,
     updateProfile,
     hasPermission,

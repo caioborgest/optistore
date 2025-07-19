@@ -5,6 +5,7 @@ export type UserRole = 'gerente' | 'supervisor' | 'colaborador';
 
 export interface UserProfile {
   id: string;
+  company_id: string;
   email: string;
   name: string;
   role: UserRole;
@@ -12,6 +13,7 @@ export interface UserProfile {
   phone?: string;
   avatar_url?: string;
   is_active: boolean;
+  is_company_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -39,14 +41,14 @@ export class AuthService {
   /**
    * Realiza login do usuário
    */
-  static async signIn(credentials: LoginCredentials): Promise<{ user: User | null; error: any }> {
+  static async signIn(credentials: LoginCredentials): Promise<{ user: User | null; error: Error | null }> {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password
     });
 
     if (error) {
-      return { user: null, error: this.translateAuthError(error.message) };
+      return { user: null, error: new Error(this.translateAuthError(error.message)) };
     }
 
     return { user: data.user, error: null };
@@ -55,7 +57,7 @@ export class AuthService {
   /**
    * Registra novo usuário
    */
-  static async signUp(userData: RegisterData): Promise<{ user: User | null; error: any }> {
+  static async signUp(userData: RegisterData): Promise<{ user: User | null; error: Error | null }> {
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -70,7 +72,7 @@ export class AuthService {
     });
 
     if (error) {
-      return { user: null, error: this.translateAuthError(error.message) };
+      return { user: null, error: new Error(this.translateAuthError(error.message)) };
     }
 
     // Criar perfil do usuário na tabela users
@@ -97,7 +99,7 @@ export class AuthService {
   /**
    * Realiza logout do usuário
    */
-  static async signOut(): Promise<{ error: any }> {
+  static async signOut(): Promise<{ error: Error | null }> {
     const { error } = await supabase.auth.signOut();
     return { error };
   }
@@ -105,11 +107,11 @@ export class AuthService {
   /**
    * Busca perfil completo do usuário atual
    */
-  static async getCurrentUserProfile(): Promise<{ profile: UserProfile | null; error: any }> {
+  static async getCurrentUserProfile(): Promise<{ profile: UserProfile | null; error: Error | null }> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      return { profile: null, error: 'Usuário não autenticado' };
+      return { profile: null, error: new Error('Usuário não autenticado') };
     }
 
     const { data, error } = await supabase
@@ -124,11 +126,11 @@ export class AuthService {
   /**
    * Atualiza perfil do usuário
    */
-  static async updateProfile(updates: Partial<UserProfile>): Promise<{ error: any }> {
+  static async updateProfile(updates: Partial<UserProfile>): Promise<{ error: Error | null }> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      return { error: 'Usuário não autenticado' };
+      return { error: new Error('Usuário não autenticado') };
     }
 
     const { error } = await supabase
@@ -303,11 +305,11 @@ export class AuthService {
   /**
    * Busca usuários com filtros baseados nas permissões
    */
-  static async getUsers(sector?: string): Promise<{ users: UserProfile[] | null; error: any }> {
+  static async getUsers(sector?: string): Promise<{ users: UserProfile[] | null; error: Error | null }> {
     const { profile } = await this.getCurrentUserProfile();
     
     if (!profile) {
-      return { users: null, error: 'Usuário não autenticado' };
+      return { users: null, error: new Error('Usuário não autenticado') };
     }
 
     let query = supabase
@@ -336,11 +338,11 @@ export class AuthService {
   /**
    * Cria novo usuário (apenas gerente)
    */
-  static async createUser(userData: RegisterData): Promise<{ user: UserProfile | null; error: any }> {
+  static async createUser(userData: RegisterData): Promise<{ user: UserProfile | null; error: Error | null }> {
     const hasPermission = await this.hasPermission('users', 'create');
     
     if (!hasPermission) {
-      return { user: null, error: 'Sem permissão para criar usuários' };
+      return { user: null, error: new Error('Sem permissão para criar usuários') };
     }
 
     const { user, error } = await this.signUp(userData);
@@ -360,7 +362,7 @@ export class AuthService {
   /**
    * Atualiza usuário (gerente ou supervisor do mesmo setor)
    */
-  static async updateUser(userId: string, updates: Partial<UserProfile>): Promise<{ error: any }> {
+  static async updateUser(userId: string, updates: Partial<UserProfile>): Promise<{ error: Error | null }> {
     // Buscar usuário alvo para verificar setor
     const { data: targetUser } = await supabase
       .from('users')
@@ -371,7 +373,7 @@ export class AuthService {
     const hasPermission = await this.hasPermission('users', 'update', userId, targetUser?.sector);
     
     if (!hasPermission) {
-      return { error: 'Sem permissão para atualizar este usuário' };
+      return { error: new Error('Sem permissão para atualizar este usuário') };
     }
 
     const { error } = await supabase
@@ -388,11 +390,11 @@ export class AuthService {
   /**
    * Desativa usuário (apenas gerente)
    */
-  static async deactivateUser(userId: string): Promise<{ error: any }> {
+  static async deactivateUser(userId: string): Promise<{ error: Error | null }> {
     const hasPermission = await this.hasPermission('users', 'delete');
     
     if (!hasPermission) {
-      return { error: 'Sem permissão para desativar usuários' };
+      return { error: new Error('Sem permissão para desativar usuários') };
     }
 
     const { error } = await supabase
@@ -442,7 +444,7 @@ export class AuthService {
   /**
    * Busca setores disponíveis
    */
-  static async getSectors(): Promise<{ sectors: string[] | null; error: any }> {
+  static async getSectors(): Promise<{ sectors: string[] | null; error: unknown }> {
     const { data, error } = await supabase
       .from('users')
       .select('sector')

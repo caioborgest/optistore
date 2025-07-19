@@ -8,6 +8,7 @@ import Calendar from '../components/Calendar';
 import Chat from '../components/Chat';
 import Reports from '../components/Reports';
 import Settings from '../components/Settings';
+import { CompanySettings } from '../components/CompanySettings';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../hooks/useAuth';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
@@ -43,6 +44,7 @@ const Index = () => {
           <Route path="/chat" element={<Chat />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/company" element={<CompanySettings />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
