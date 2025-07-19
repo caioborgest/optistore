@@ -1,4 +1,4 @@
-import * as React from "react"
+import React, { forwardRef, HTMLAttributes, ComponentPropsWithoutRef, createContext, useContext, useId, ElementRef } from "react"
 import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form"
 import { Controller } from "react-hook-form"
 import { Slot } from "@radix-ui/react-slot"
@@ -6,9 +6,9 @@ import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-const Form = React.forwardRef<
+const Form = forwardRef<
   HTMLFormElement,
-  React.HTMLAttributes<HTMLFormElement>
+  HTMLAttributes<HTMLFormElement>
 >(({ className, ...props }, ref) => (
   <form ref={ref} className={cn("space-y-6", className)} {...props} />
 ))
@@ -21,7 +21,7 @@ type FormFieldContextValue<
   name: TName
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
+const FormFieldContext = createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
 
@@ -39,7 +39,7 @@ const FormField = <
 }
 
 const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
+  const fieldContext = useContext(FormFieldContext)
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
@@ -59,15 +59,15 @@ type FormItemContextValue = {
   id: string
 }
 
-const FormItemContext = React.createContext<FormItemContextValue>(
+const FormItemContext = createContext<FormItemContextValue>(
   {} as FormItemContextValue
 )
 
-const FormItem = React.forwardRef<
+const FormItem = forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const id = React.useId()
+  const id = useId()
 
   return (
     <FormItemContext.Provider value={{ id }}>

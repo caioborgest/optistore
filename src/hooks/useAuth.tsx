@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/services/authService';
-import { Company } from '@/services/companyService';
+import { Company, CompanyService, CompanyRegistration, UserInvite } from '@/services/companyService';
 
 interface AuthContextType {
   user: User | null;
@@ -12,12 +12,12 @@ interface AuthContextType {
   company: Company | null;
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string, sector: string, role?: 'gerente' | 'supervisor' | 'colaborador') => Promise<{ error: any }>;
-  registerCompany: (companyData: any) => Promise<{ error: any }>;
-  registerWithInvite: (inviteData: any) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, sector: string, role?: 'gerente' | 'supervisor' | 'colaborador') => Promise<{ error: Error | null }>;
+  registerCompany: (companyData: CompanyRegistration) => Promise<{ error: Error | null }>;
+  registerWithInvite: (inviteData: UserInvite) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
   hasPermission: (resource: string, action: 'create' | 'read' | 'update' | 'delete', targetUserId?: string, targetSector?: string) => boolean;
 }
 
@@ -106,14 +106,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: errorMessage,
         variant: "destructive",
       });
+      return { error: new Error(errorMessage) };
     } else {
       toast({
         title: "Bem-vindo!",
         description: "Login realizado com sucesso.",
       });
+      return { error: null };
     }
-
-    return { error };
   };
 
   const signUp = async (
@@ -142,6 +142,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: errorMessage,
         variant: "destructive",
       });
+      return { error: new Error(errorMessage) };
     } else if (data.user) {
       // Criar perfil na tabela users
       const { error: profileError } = await supabase
@@ -162,9 +163,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Cadastro realizado!",
         description: "Verifique seu email para confirmar a conta.",
       });
+      return { error: null };
     }
 
-    return { error };
+    return { error: null };
   };
 
   const logout = async () => {
@@ -184,7 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) return { error: 'Usuário não autenticado' };
+    if (!user) return { error: new Error('Usuário não autenticado') };
 
     const { error } = await supabase
       .from('users')
@@ -200,9 +202,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso.",
       });
+      return { error: null };
     }
 
-    return { error };
+    return { error: error instanceof Error ? error : new Error(error?.message || 'Erro ao atualizar perfil') };
   };
 
   const hasPermission = (
@@ -319,12 +322,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return translations[errorMessage] || errorMessage;
   };
 
-  const registerCompany = async (companyData: any) => {
+  const registerCompany = async (companyData: CompanyRegistration) => {
     try {
       console.log('🎯 useAuth: Iniciando registro de empresa');
       
       // Implementar registro de empresa usando CompanyService
-      const { CompanyService } = await import('@/services/companyService');
       const { company, error } = await CompanyService.registerCompany(companyData);
       
       console.log('📊 useAuth: Resultado do registro:', { company: !!company, error });
@@ -375,26 +377,59 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const registerWithInvite = async (inviteData: any) => {
-    // Implementar registro com convite usando CompanyService
-    const { CompanyService } = await import('@/services/companyService');
-    const { user: newUser, error } = await CompanyService.registerUserWithInvite(inviteData);
-    
-    if (error) {
-      const errorMessage = translateAuthError(error.message);
+  const registerWithInvite = async (inviteData: UserInvite) => {
+    try {
+      console.log('🎯 useAuth: Iniciando registro com convite');
+      
+      // Implementar registro com convite usando CompanyService
+      const { user: newUser, error } = await CompanyService.registerUserWithInvite(inviteData);
+      
+      console.log('📊 useAuth: Resultado do registro com convite:', { user: !!newUser, error });
+      
+      if (error) {
+        console.error('❌ useAuth: Erro no registro com convite:', error);
+        
+        let errorMessage = 'Erro desconhecido ao registrar com convite';
+        
+        if (error instanceof Error) {
+          errorMessage = translateAuthError(error.message);
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage = translateAuthError(error.message);
+        } else if (error?.code) {
+          errorMessage = `Erro do banco de dados: ${error.code}`;
+        }
+        
+        toast({
+          title: "Erro ao registrar com convite",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        return { error: error instanceof Error ? error : new Error(errorMessage) };
+      } else {
+        console.log('✅ useAuth: Registro com convite realizado com sucesso');
+        toast({
+          title: "Cadastro realizado!",
+          description: "Bem-vindo à equipe! Verifique seu email para confirmar a conta.",
+        });
+        
+        return { error: null };
+      }
+    } catch (catchError) {
+      console.error('💥 useAuth: Erro geral no registro com convite:', catchError);
+      
+      const errorMessage = catchError instanceof Error ? catchError.message : 'Erro inesperado';
+      
       toast({
         title: "Erro ao registrar com convite",
         description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Cadastro realizado!",
-        description: "Bem-vindo à equipe! Verifique seu email para confirmar a conta.",
-      });
+      
+      return { error: catchError instanceof Error ? catchError : new Error(errorMessage) };
     }
-
-    return { error };
   };
 
   const value = {
