@@ -225,14 +225,7 @@ const Login = () => {
                   </Button>
                 </form>
                 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-2">Demo - Usuários de Teste:</p>
-                  <div className="text-xs text-blue-700 space-y-1">
-                    <div>👨‍💼 Gerente: admin@loja.com / 123456</div>
-                    <div>👷‍♂️ Colaborador: funcionario@loja.com / 123456</div>
-                    <div>📋 Supervisor: supervisor@loja.com / 123456</div>
-                  </div>
-                </div>
+                
               </CardContent>
             </TabsContent>
             
