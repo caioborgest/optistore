@@ -1,10 +1,8 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../components/Login';
-import Dashboard from '../components/Dashboard';
-import ClientManager from '../components/ClientManager';
-import InteractionManager from '../components/InteractionManager';
+import { RoleDashboard } from '../components/dashboard/RoleDashboard';
 import TaskManager from '../components/TaskManager';
 import Calendar from '../components/Calendar';
 import Chat from '../components/Chat';
@@ -13,23 +11,33 @@ import Settings from '../components/Settings';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../hooks/useAuth';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, userProfile, isAuthenticated, loading } = useAuth();
 
-  if (!isAuthenticated) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !userProfile) {
     return <Login />;
   }
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      <Sidebar userProfile={userProfile} />
       <main className="flex-1 overflow-hidden">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/clients" element={<ClientManager />} />
-          <Route path="/interactions" element={<InteractionManager />} />
+          <Route path="/" element={<RoleDashboard userProfile={userProfile} />} />
+          <Route path="/dashboard" element={<RoleDashboard userProfile={userProfile} />} />
           <Route path="/tasks" element={<TaskManager />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/chat" element={<Chat />} />

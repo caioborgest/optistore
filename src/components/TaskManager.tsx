@@ -1,10 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/hooks/useAuth';
+import { useRecurringTasks, Task } from '@/services/recurringTaskService';
+import { RecurringTaskForm } from '@/components/forms/RecurringTaskForm';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Plus, 
   Search, 
@@ -17,84 +24,140 @@ import {
   AlertTriangle,
   MoreVertical,
   MessageSquare,
-  Paperclip
+  Paperclip,
+  Repeat,
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react';
 
 const TaskManager = () => {
+  const { userProfile, hasPermission } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSector, setFilterSector] = useState('all');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Mock data para demonstração
-  const tasks = [
-    {
-      id: 1,
-      title: 'Organizar setor de tintas e vernizes',
-      description: 'Reorganizar prateleiras, conferir validade dos produtos e atualizar etiquetas de preço',
-      status: 'completed',
-      priority: 'medium',
-      sector: 'Tintas',
-      assignee: {
-        name: 'João Silva',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face'
-      },
-      dueDate: '2024-01-15',
-      createdAt: '2024-01-10',
-      comments: 3,
-      attachments: 2,
-      recurring: 'weekly'
-    },
-    {
-      id: 2,
-      title: 'Conferir estoque de cimento Portland',
-      description: 'Verificar quantidades, condições de armazenamento e solicitar reposição se necessário',
-      status: 'in_progress',
-      priority: 'high',
-      sector: 'Materiais Básicos',
-      assignee: {
-        name: 'Maria Santos',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b608?w=40&h=40&fit=crop&crop=face'
-      },
-      dueDate: '2024-01-16',
-      createdAt: '2024-01-12',
-      comments: 1,
-      attachments: 0,
-      recurring: null
-    },
-    {
-      id: 3,
-      title: 'Limpeza completa da área externa',
-      description: 'Varrer, lavar área de carga/descarga e organizar materiais expostos',
-      status: 'overdue',
-      priority: 'low',
-      sector: 'Limpeza',
-      assignee: {
-        name: 'Pedro Costa',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face'
-      },
-      dueDate: '2024-01-14',
-      createdAt: '2024-01-08',
-      comments: 0,
-      attachments: 1,
-      recurring: 'daily'
-    },
-    {
-      id: 4,
-      title: 'Atualizar tabela de preços - Ferramentas',
-      description: 'Revisar preços de ferramentas manuais e elétricas conforme nova lista de fornecedores',
-      status: 'pending',
-      priority: 'medium',
-      sector: 'Vendas',
-      assignee: {
-        name: 'Ana Lima',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face'
-      },
-      dueDate: '2024-01-18',
-      createdAt: '2024-01-13',
-      comments: 2,
-      attachments: 1,
-      recurring: 'monthly'
+  // Carregar tarefas
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_user:users!assigned_to(id, name, avatar_url),
+          created_user:users!created_by(id, name, avatar_url),
+          task_comments(count),
+          task_attachments(count)
+        `)
+        .order('created_at', { ascending: false });
+
+      // Filtrar baseado nas permissões do usuário
+      if (userProfile?.role === 'colaborador') {
+        query = query.eq('assigned_to', userProfile.id);
+      } else if (userProfile?.role === 'supervisor') {
+        query = query.eq('sector', userProfile.sector);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        toast({
+          title: 'Erro ao carregar tarefas',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (data) {
+        const formattedTasks: Task[] = data.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          priority: task.priority,
+          sector: task.sector,
+          assigned_to: task.assigned_to,
+          created_by: task.created_by,
+          due_date: task.due_date,
+          completed_at: task.completed_at,
+          is_recurring: task.is_recurring,
+          recurrence_pattern: task.recurrence_pattern,
+          parent_task_id: task.parent_task_id,
+          created_at: task.created_at,
+          updated_at: task.updated_at
+        }));
+        setTasks(formattedTasks);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+      toast({
+        title: 'Erro inesperado',
+        description: 'Não foi possível carregar as tarefas',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, [userProfile]);
+
+  // Atualizar status da tarefa
+  const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: newStatus,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        toast({
+          title: 'Erro ao atualizar tarefa',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Atualizar estado local
+      setTasks(prev => prev.map(task => 
+        task.id === taskId 
+          ? { ...task, status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null }
+          : task
+      ));
+
+      toast({
+        title: 'Tarefa atualizada',
+        description: `Status alterado para ${getStatusLabel(newStatus)}`
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed': return 'Concluída';
+      case 'in_progress': return 'Em Andamento';
+      case 'pending': return 'Pendente';
+      case 'overdue': return 'Atrasada';
+      case 'cancelled': return 'Cancelada';
+      default: return status;
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -142,10 +205,44 @@ const TaskManager = () => {
             Organize e acompanhe todas as atividades operacionais
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Tarefa
-        </Button>
+        {hasPermission('tasks', 'create') && (
+          <Dialog open={showTaskForm} onOpenChange={setShowTaskForm}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedTask ? 'Editar Tarefa' : 'Nova Tarefa'}
+                </DialogTitle>
+              </DialogHeader>
+              <RecurringTaskForm
+                initialData={selectedTask ? {
+                  title: selectedTask.title,
+                  description: selectedTask.description,
+                  sector: selectedTask.sector,
+                  assignedTo: selectedTask.assigned_to,
+                  priority: selectedTask.priority,
+                  dueDate: new Date(selectedTask.due_date),
+                  isRecurring: selectedTask.is_recurring,
+                  recurrencePattern: selectedTask.recurrence_pattern
+                } : undefined}
+                onSuccess={() => {
+                  setShowTaskForm(false);
+                  setSelectedTask(null);
+                  loadTasks();
+                }}
+                onCancel={() => {
+                  setShowTaskForm(false);
+                  setSelectedTask(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Filters */}
@@ -240,45 +337,57 @@ const TaskManager = () => {
                 </span>
               </div>
 
-              {/* Assignee */}
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-400" />
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={task.assignee.avatar} />
-                  <AvatarFallback className="text-xs">
-                    {task.assignee.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{task.assignee.name}</span>
-              </div>
-
               {/* Due Date */}
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  Prazo: {new Date(task.dueDate).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
+              {task.due_date && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    Prazo: {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              )}
+
+              {/* Recurring indicator */}
+              {task.is_recurring && (
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm text-purple-600">
+                    Tarefa recorrente
+                  </span>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex items-center justify-between pt-2 border-t">
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  {task.comments > 0 && (
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{task.comments}</span>
-                    </div>
-                  )}
-                  {task.attachments > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Paperclip className="h-4 w-4" />
-                      <span>{task.attachments}</span>
-                    </div>
+                <div className="flex items-center gap-2">
+                  {hasPermission('tasks', 'update', task.assigned_to, task.sector) && (
+                    <Select
+                      value={task.status}
+                      onValueChange={(value: Task['status']) => updateTaskStatus(task.id, value)}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="in_progress">Em Andamento</SelectItem>
+                        <SelectItem value="completed">Concluída</SelectItem>
+                        <SelectItem value="cancelled">Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
-                <Button size="sm" variant="outline">
-                  Ver Detalhes
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    setSelectedTask(task);
+                    setShowTaskForm(true);
+                  }}>
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost">
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -4,11 +4,60 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Building2, Users, BarChart3 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
+import { Building2, Users, BarChart3, Mail, Lock, User, MapPin, Loader2 } from 'lucide-react';
+
+const SECTORS = [
+  'Vendas',
+  'Estoque',
+  'Caixa',
+  'Entregas',
+  'Limpeza',
+  'Administração',
+  'Materiais Básicos',
+  'Tintas',
+  'Ferramentas'
+];
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { signIn, signUp, loading } = useAuth();
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [signupData, setSignupData] = useState({ 
+    email: '', 
+    password: '', 
+    name: '',
+    sector: '',
+    role: 'colaborador' as 'gerente' | 'supervisor' | 'colaborador',
+    confirmPassword: '' 
+  });
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginData.email || !loginData.password) {
+      alert('Preencha todos os campos');
+      return;
+    }
+    await signIn(loginData.email, loginData.password);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupData.email || !signupData.password || !signupData.name || !signupData.sector) {
+      alert('Preencha todos os campos obrigatórios');
+      return;
+    }
+    if (signupData.password !== signupData.confirmPassword) {
+      alert('As senhas não coincidem');
+      return;
+    }
+    if (signupData.password.length < 6) {
+      alert('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    await signUp(signupData.email, signupData.password, signupData.name, signupData.sector, signupData.role);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -43,46 +92,202 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Lado direito - Formulário de Login */}
+        {/* Lado direito - Formulários */}
         <Card className="w-full max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Fazer Login</CardTitle>
-            <p className="text-gray-600">Acesse sua conta para continuar</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <Button className="w-full" size="lg">
-              Entrar
-            </Button>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+            </TabsList>
             
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800 font-medium mb-2">Demo - Usuários de Teste:</p>
-              <div className="text-xs text-blue-700 space-y-1">
-                <div>👨‍💼 Gerente: manager@loja.com</div>
-                <div>👷‍♂️ Colaborador: funcionario@loja.com</div>
-                <div>📋 Supervisor: supervisor@loja.com</div>
-              </div>
-            </div>
-          </CardContent>
+            <TabsContent value="login">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold">Fazer Login</CardTitle>
+                <p className="text-gray-600">Acesse sua conta para continuar</p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="pl-10"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      'Entrar'
+                    )}
+                  </Button>
+                </form>
+                
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium mb-2">Demo - Usuários de Teste:</p>
+                  <div className="text-xs text-blue-700 space-y-1">
+                    <div>👨‍💼 Gerente: admin@loja.com / 123456</div>
+                    <div>👷‍♂️ Colaborador: funcionario@loja.com / 123456</div>
+                    <div>📋 Supervisor: supervisor@loja.com / 123456</div>
+                  </div>
+                </div>
+              </CardContent>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
+                <p className="text-gray-600">Cadastre-se para começar</p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Nome Completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Seu nome completo"
+                        className="pl-10"
+                        value={signupData.name}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="pl-10"
+                        value={signupData.email}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-sector">Setor</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                      <Select 
+                        value={signupData.sector} 
+                        onValueChange={(value) => setSignupData(prev => ({ ...prev, sector: value }))}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Selecione seu setor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECTORS.map((sector) => (
+                            <SelectItem key={sector} value={sector}>
+                              {sector}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-role">Função</Label>
+                    <Select 
+                      value={signupData.role} 
+                      onValueChange={(value: 'gerente' | 'supervisor' | 'colaborador') => 
+                        setSignupData(prev => ({ ...prev, role: value }))
+                      }
+                      disabled={loading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="colaborador">Colaborador</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
+                        <SelectItem value="gerente">Gerente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={signupData.password}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirmar Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="signup-confirm-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={signupData.confirmPassword}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Criando conta...
+                      </>
+                    ) : (
+                      'Criar Conta'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </TabsContent>
+          </Tabs>
         </Card>
       </div>
     </div>
