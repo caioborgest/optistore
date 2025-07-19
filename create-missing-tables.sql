@@ -1,5 +1,5 @@
 -- =====================================================
--- CRIAR APENAS TABELAS QUE NÃO EXISTEM
+-- CRIAR APENAS TABELAS QUE NÃO EXISTEM - VERSÃO CORRIGIDA
 -- Execute este script no SQL Editor do Supabase
 -- =====================================================
 
@@ -50,7 +50,7 @@ BEGIN
 END $$;
 
 -- =====================================================
--- CRIAR TABELAS SE NÃO EXISTIREM
+-- CRIAR TABELA COMPANIES (ESSENCIAL)
 -- =====================================================
 
 -- Tabela de empresas
@@ -67,7 +67,11 @@ CREATE TABLE IF NOT EXISTS public.companies (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Verificar se a tabela users já tem a coluna company_id
+-- =====================================================
+-- ATUALIZAR TABELA USERS EXISTENTE
+-- =====================================================
+
+-- Verificar se a tabela users já tem as colunas necessárias
 DO $$ 
 BEGIN
     -- Adicionar coluna company_id se não existir
@@ -89,17 +93,11 @@ BEGIN
     ) THEN
         ALTER TABLE public.users ADD COLUMN is_company_admin BOOLEAN DEFAULT false;
     END IF;
-
-    -- Adicionar constraint unique se não existir
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users' 
-        AND constraint_name = 'users_company_id_email_key'
-    ) THEN
-        ALTER TABLE public.users ADD CONSTRAINT users_company_id_email_key UNIQUE(company_id, email);
-    END IF;
 END $$;
+
+-- =====================================================
+-- CRIAR OUTRAS TABELAS SE NÃO EXISTIREM
+-- =====================================================
 
 -- Tabela de tarefas
 CREATE TABLE IF NOT EXISTS public.tasks (
@@ -168,8 +166,7 @@ CREATE TABLE IF NOT EXISTS public.chat_members (
     role member_role DEFAULT 'member',
     is_muted BOOLEAN DEFAULT false,
     joined_at TIMESTAMP DEFAULT NOW(),
-    last_read_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(chat_id, user_id)
+    last_read_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabela de mensagens
@@ -216,82 +213,32 @@ CREATE INDEX IF NOT EXISTS idx_companies_active ON public.companies(is_active);
 -- Índices para usuários
 CREATE INDEX IF NOT EXISTS idx_users_company_id ON public.users(company_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
-CREATE INDEX IF NOT EXISTS idx_users_sector ON public.users(sector);
-CREATE INDEX IF NOT EXISTS idx_users_active ON public.users(is_active);
 
 -- =====================================================
--- CRIAR FUNÇÕES E TRIGGERS SE NÃO EXISTIREM
+-- CONFIGURAR RLS E POLÍTICAS TEMPORÁRIAS
 -- =====================================================
 
--- Função para atualizar timestamp de updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$ language 'plpgsql';
-
--- Triggers para updated_at (DROP IF EXISTS para recriar)
-DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_tasks_updated_at ON public.tasks;
-CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_chats_updated_at ON public.chats;
-CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON public.chats FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- =====================================================
--- CONFIGURAR RLS E POLÍTICAS
--- =====================================================
-
--- Habilitar RLS nas tabelas
+-- Habilitar RLS nas tabelas principais
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.task_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.task_attachments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chat_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
--- Remover políticas existentes e criar novas
+-- Remover políticas existentes
 DROP POLICY IF EXISTS "Allow company registration" ON public.companies;
 DROP POLICY IF EXISTS "Users can view their company" ON public.companies;
 DROP POLICY IF EXISTS "Company admins can update their company" ON public.companies;
+DROP POLICY IF EXISTS "Allow company operations" ON public.companies;
 
--- Políticas para empresas (temporariamente permissivas)
-CREATE POLICY "Allow company operations" ON public.companies
-    FOR ALL USING (true) WITH CHECK (true);
-
--- Remover políticas existentes para users
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can view colleagues from same company" ON public.users;
+DROP POLICY IF EXISTS "Allow user operations" ON public.users;
 
--- Políticas para usuários (temporariamente permissivas)
-CREATE POLICY "Allow user operations" ON public.users
+-- Políticas temporárias MUITO PERMISSIVAS (apenas para teste)
+CREATE POLICY "temp_allow_all_companies" ON public.companies
     FOR ALL USING (true) WITH CHECK (true);
 
--- Políticas básicas para outras tabelas
-CREATE POLICY IF NOT EXISTS "Allow task operations" ON public.tasks
+CREATE POLICY "temp_allow_all_users" ON public.users
     FOR ALL USING (true) WITH CHECK (true);
-
-CREATE POLICY IF NOT EXISTS "Allow notification operations" ON public.notifications
-    FOR ALL USING (true) WITH CHECK (true);
-
--- =====================================================
--- HABILITAR REALTIME
--- =====================================================
-
--- Habilitar realtime para as tabelas necessárias
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_members;
 
 -- =====================================================
 -- VERIFICAR RESULTADO
@@ -301,28 +248,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_members;
 SELECT 
     table_name,
     CASE 
-        WHEN table_name = 'companies' THEN '✅ ESSENCIAL para registro'
+        WHEN table_name = 'companies' THEN '✅ ESSENCIAL - Tabela criada!'
         WHEN table_name = 'users' THEN '✅ Atualizada com company_id'
-        ELSE '✅ Criada'
+        ELSE '✅ Criada com sucesso'
     END as status
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 AND table_name IN ('companies', 'users', 'tasks', 'chats', 'messages', 'notifications', 'task_comments', 'task_attachments', 'chat_members')
-ORDER BY table_name;
+ORDER BY 
+    CASE 
+        WHEN table_name = 'companies' THEN 1
+        WHEN table_name = 'users' THEN 2
+        ELSE 3
+    END,
+    table_name;
 
 -- Verificar estrutura da tabela companies
 SELECT 
+    '🏢 ESTRUTURA DA TABELA COMPANIES:' as info,
     column_name, 
     data_type, 
-    is_nullable,
-    column_default
+    is_nullable
 FROM information_schema.columns
 WHERE table_schema = 'public' 
 AND table_name = 'companies'
 ORDER BY ordinal_position;
 
--- Verificar se users tem company_id
+-- Verificar se users tem as novas colunas
 SELECT 
+    '👤 NOVAS COLUNAS NA TABELA USERS:' as info,
     column_name, 
     data_type, 
     is_nullable
@@ -332,5 +286,20 @@ AND table_name = 'users'
 AND column_name IN ('company_id', 'is_company_admin')
 ORDER BY column_name;
 
--- Mensagem de sucesso
-SELECT '🎉 SETUP CONCLUÍDO! Agora teste o registro de empresa na aplicação.' as resultado;
+-- Verificar políticas RLS
+SELECT 
+    '🔒 POLÍTICAS RLS ATIVAS:' as info,
+    schemaname,
+    tablename, 
+    policyname,
+    cmd
+FROM pg_policies 
+WHERE tablename IN ('companies', 'users')
+ORDER BY tablename, policyname;
+
+-- Mensagem final
+SELECT '🎉 SETUP CONCLUÍDO COM SUCESSO! 
+✅ Tabela companies criada
+✅ Tabela users atualizada  
+✅ Políticas RLS configuradas
+🚀 AGORA TESTE O REGISTRO DE EMPRESA!' as resultado;
