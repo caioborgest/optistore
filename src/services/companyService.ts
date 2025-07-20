@@ -22,6 +22,8 @@ export interface UserInvite {
   phone?: string;
 }
 
+export { Company };
+
 export class CompanyService {
   /**
    * Gera um código de convite único

@@ -81,7 +81,7 @@ export class MockRecurringTaskService {
   }
 }
 
-export const useRecurringTasks = () => {
+export const useMockRecurringTaskService = () => {
   const generateTasks = async () => {
     await MockRecurringTaskService.generateRecurringTasks();
   };

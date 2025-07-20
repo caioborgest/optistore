@@ -8,18 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { useMockRecurringTaskService } from '@/services/mockRecurringTaskService';
+import { useMockRecurringTaskService, RecurrencePattern } from '@/services/mockRecurringTaskService';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, Repeat, Users, AlertCircle, X } from 'lucide-react';
-
-export interface RecurrencePattern {
-  type: 'daily' | 'weekly' | 'monthly';
-  interval: number;
-  daysOfWeek?: number[];
-  dayOfMonth?: number;
-  endDate?: Date;
-  maxOccurrences?: number;
-}
 
 interface RecurringTaskFormProps {
   onSubmit?: (task: any) => void;
@@ -48,7 +39,7 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
       interval: 1,
       daysOfWeek: [] as number[],
       dayOfMonth: 1,
-      endDate: undefined as Date | undefined,
+      endDate: undefined as string | undefined,
       maxOccurrences: undefined as number | undefined
     } as RecurrencePattern
   });
@@ -125,16 +116,6 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
         return;
       }
 
-      // Ensure all required properties are present
-      const completeRecurrencePattern: RecurrencePattern = {
-        type: formData.recurrence_pattern.type,
-        interval: formData.recurrence_pattern.interval,
-        daysOfWeek: formData.recurrence_pattern.daysOfWeek,
-        dayOfMonth: formData.recurrence_pattern.dayOfMonth,
-        endDate: formData.recurrence_pattern.endDate,
-        maxOccurrences: formData.recurrence_pattern.maxOccurrences
-      };
-
       const taskData = {
         title: formData.title,
         description: formData.description,
@@ -144,10 +125,15 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
         priority: formData.priority,
         status: 'pending' as const,
         is_recurring: true,
-        recurrence_pattern: completeRecurrencePattern,
-        created_by: 'current-user-id',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        recurrence_pattern: {
+          type: formData.recurrence_pattern.type,
+          interval: formData.recurrence_pattern.interval,
+          daysOfWeek: formData.recurrence_pattern.daysOfWeek,
+          dayOfMonth: formData.recurrence_pattern.dayOfMonth,
+          endDate: formData.recurrence_pattern.endDate,
+          maxOccurrences: formData.recurrence_pattern.maxOccurrences
+        },
+        created_by: 'current-user-id'
       };
 
       const { error } = await createRecurringTask(taskData);
@@ -346,10 +332,9 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   <Input
                     id="endDate"
                     type="date"
-                    value={formData.recurrence_pattern.endDate ? 
-                      formData.recurrence_pattern.endDate.toISOString().split('T')[0] : ''}
+                    value={formData.recurrence_pattern.endDate || ''}
                     onChange={(e) => handleRecurrenceChange('endDate', 
-                      e.target.value ? new Date(e.target.value) : undefined)}
+                      e.target.value || undefined)}
                   />
                 </div>
 

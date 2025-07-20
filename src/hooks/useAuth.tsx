@@ -36,23 +36,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { profile } = await MockAuthService.getCurrentUserProfile();
       if (profile) {
-        // Ensure the profile has all required properties
-        const completeProfile: UserProfile = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email || user?.email || '',
-          avatar_url: profile.avatar_url,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-          company_id: '1',
-          role: profile.role || 'employee',
-          sector: profile.sector || 'Geral',
-          is_active: true,
-          is_company_admin: profile.role === 'admin'
-        };
-        setUserProfile(completeProfile);
+        setUserProfile(profile);
         
-        // Mock company data with all required properties
+        // Mock company data
         const mockCompany: Company = {
           id: '1',
           name: 'Empresa Exemplo',
