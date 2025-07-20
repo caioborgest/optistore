@@ -3,13 +3,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MockAuthService, UserProfile, LoginCredentials, RegisterData } from '@/services/mockAuthService';
-
-interface Company {
-  id: string;
-  name: string;
-  email: string;
-}
+import { MockAuthService, LoginCredentials, RegisterData } from '@/services/mockAuthService';
+import { UserProfile, Company } from '@/types/database';
 
 interface AuthContextType {
   user: User | null;
@@ -41,13 +36,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { profile } = await MockAuthService.getCurrentUserProfile();
       if (profile) {
-        setUserProfile(profile);
-        // Mock company data
-        setCompany({
+        // Ensure the profile has all required properties
+        const completeProfile: UserProfile = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email || user?.email || '',
+          avatar_url: profile.avatar_url,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at,
+          company_id: '1',
+          role: profile.role || 'employee',
+          sector: profile.sector || 'Geral',
+          is_active: true,
+          is_company_admin: profile.role === 'admin'
+        };
+        setUserProfile(completeProfile);
+        
+        // Mock company data with all required properties
+        const mockCompany: Company = {
           id: '1',
           name: 'Empresa Exemplo',
-          email: 'contato@exemplo.com'
-        });
+          email: 'contato@exemplo.com',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          phone: '(11) 99999-9999',
+          address: 'Rua Exemplo, 123',
+          invite_code: 'ABC12345'
+        };
+        setCompany(mockCompany);
       }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);

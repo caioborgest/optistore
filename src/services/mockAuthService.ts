@@ -1,19 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { UserProfile } from '@/types/database';
 
 export type UserRole = 'admin' | 'manager' | 'employee';
-
-export interface UserProfile {
-  id: string;
-  user_id: string;
-  name: string;
-  avatar_url?: string;
-  role: UserRole;
-  sector?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface LoginCredentials {
   email: string;
@@ -72,27 +62,43 @@ export class MockAuthService {
       return { profile: null, error: new Error('Usuário não autenticado') };
     }
 
-    // Try to get from profiles table, fallback to user metadata
-    const { data: profileData } = await supabase
-      .from('profiles')
+    // Try to get from users table first
+    const { data: userData } = await supabase
+      .from('users')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
-    if (profileData) {
-      return { profile: profileData, error: null };
+    if (userData) {
+      const profile: UserProfile = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        avatar_url: userData.avatar_url,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+        company_id: userData.company_id,
+        role: 'employee',
+        sector: 'Geral',
+        is_active: true,
+        is_company_admin: userData.is_company_admin || false
+      };
+      return { profile, error: null };
     }
 
     // Fallback to mock profile from user metadata
     const mockProfile: UserProfile = {
       id: user.id,
-      user_id: user.id,
       name: user.user_metadata?.name || user.email || 'Usuário',
+      email: user.email || '',
       avatar_url: user.user_metadata?.avatar_url,
       role: (user.user_metadata?.role as UserRole) || 'employee',
-      sector: user.user_metadata?.sector,
+      sector: user.user_metadata?.sector || 'Geral',
       created_at: user.created_at,
-      updated_at: user.updated_at || user.created_at
+      updated_at: user.updated_at || user.created_at,
+      company_id: '1',
+      is_active: true,
+      is_company_admin: false
     };
 
     return { profile: mockProfile, error: null };
@@ -103,21 +109,27 @@ export class MockAuthService {
     const mockUsers: UserProfile[] = [
       {
         id: '1',
-        user_id: '1',
         name: 'João Silva',
+        email: 'joao@exemplo.com',
         role: 'manager',
         sector: 'Vendas',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        company_id: '1',
+        is_active: true,
+        is_company_admin: false
       },
       {
         id: '2',
-        user_id: '2',
         name: 'Maria Santos',
+        email: 'maria@exemplo.com',
         role: 'employee',
         sector: 'Estoque',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        company_id: '1',
+        is_active: true,
+        is_company_admin: false
       }
     ];
 

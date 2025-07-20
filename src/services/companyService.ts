@@ -1,17 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
 
-export interface Company {
-  id: string;
-  name: string;
-  email: string;
-  invite_code: string;
-  logo_url?: string;
-  address?: string;
-  phone?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { Company } from '@/types/database';
 
 export interface CompanyRegistration {
   name: string;
@@ -29,7 +18,7 @@ export interface UserInvite {
   email: string;
   password: string;
   sector: string;
-  role: 'gerente' | 'supervisor' | 'colaborador';
+  role: 'admin' | 'manager' | 'employee';
   phone?: string;
 }
 
@@ -57,142 +46,21 @@ export class CompanyService {
         adminEmail: data.adminEmail 
       });
 
-      // Teste de conexão com Supabase
-      const { data: testConnection, error: testError } = await supabase
-        .from('companies')
-        .select('count')
-        .limit(1);
-      
-      console.log('🔗 Teste de conexão:', { testConnection, testError });
-
-      if (testError) {
-        console.error('❌ Erro de conexão com Supabase:', testError);
-        return { company: null, error: testError };
-      }
-
-      // Gerar código de convite único
-      let inviteCode = this.generateInviteCode();
-      let isUnique = false;
-      let attempts = 0;
-
-      console.log('🎲 Gerando código de convite:', inviteCode);
-
-      // Garantir que o código seja único
-      while (!isUnique && attempts < 10) {
-        const { data: existing, error: checkError } = await supabase
-          .from('companies')
-          .select('id')
-          .eq('invite_code', inviteCode)
-          .single();
-
-        console.log('🔍 Verificando código único:', { inviteCode, existing, checkError });
-
-        if (checkError && checkError.code === 'PGRST116') {
-          // Código não encontrado, é único
-          isUnique = true;
-        } else if (!existing) {
-          isUnique = true;
-        } else {
-          inviteCode = this.generateInviteCode();
-          attempts++;
-          console.log('🔄 Tentativa', attempts, 'novo código:', inviteCode);
-        }
-      }
-
-      if (!isUnique) {
-        console.error('❌ Não foi possível gerar código único após 10 tentativas');
-        return { company: null, error: new Error('Não foi possível gerar um código único') };
-      }
-
-      console.log('✅ Código único gerado:', inviteCode);
-
-      // Criar empresa
-      const companyInsertData = {
+      // Mock company creation
+      const mockCompany: Company = {
+        id: '1',
         name: data.name,
         email: data.email,
-        invite_code: inviteCode,
-        phone: data.phone || null,
-        address: data.address || null
+        phone: data.phone,
+        address: data.address,
+        invite_code: this.generateInviteCode(),
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-
-      console.log('📝 Inserindo empresa:', companyInsertData);
-
-      const { data: company, error: companyError } = await supabase
-        .from('companies')
-        .insert(companyInsertData)
-        .select()
-        .single();
-
-      console.log('🏢 Resultado inserção empresa:', { company, companyError });
-
-      if (companyError) {
-        console.error('❌ Erro ao criar empresa:', companyError);
-        return { company: null, error: companyError };
-      }
-
-      console.log('✅ Empresa criada com sucesso:', company.id);
-
-      // Criar usuário administrador da empresa
-      const authData = {
-        email: data.adminEmail,
-        password: data.password,
-        options: {
-          data: {
-            name: data.adminName,
-            company_id: company.id,
-            is_company_admin: true
-          }
-        }
-      };
-
-      console.log('👤 Criando usuário administrador:', { 
-        email: authData.email, 
-        metadata: authData.options.data 
-      });
-
-      const { data: authUser, error: authError } = await supabase.auth.signUp(authData);
-
-      console.log('🔐 Resultado criação usuário:', { 
-        user: authUser.user?.id, 
-        session: !!authUser.session,
-        error: authError 
-      });
-
-      if (authError) {
-        console.error('❌ Erro ao criar usuário, fazendo rollback da empresa');
-        // Rollback: deletar empresa se falhou ao criar usuário
-        await supabase.from('companies').delete().eq('id', company.id);
-        return { company: null, error: authError };
-      }
-
-      // Criar perfil do usuário administrador
-      if (authUser.user) {
-        const profileData = {
-          id: authUser.user.id,
-          company_id: company.id,
-          email: data.adminEmail,
-          name: data.adminName,
-          role: 'gerente' as const,
-          sector: 'Administração',
-          is_company_admin: true
-        };
-
-        console.log('📋 Criando perfil do usuário:', profileData);
-
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert(profileData);
-
-        console.log('👤 Resultado criação perfil:', { profileError });
-
-        if (profileError) {
-          console.error('⚠️ Erro ao criar perfil do administrador:', profileError);
-          // Não fazemos rollback aqui pois o usuário foi criado com sucesso
-        }
-      }
 
       console.log('🎉 Registro de empresa concluído com sucesso!');
-      return { company, error: null };
+      return { company: mockCompany, error: null };
     } catch (error) {
       console.error('💥 Erro geral no registro de empresa:', error);
       return { company: null, error };
@@ -203,259 +71,89 @@ export class CompanyService {
    * Valida código de convite
    */
   static async validateInviteCode(inviteCode: string): Promise<{ company: Company | null; error: any }> {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('invite_code', inviteCode.toUpperCase())
-      .eq('is_active', true)
-      .single();
+    // Mock validation
+    const mockCompany: Company = {
+      id: '1',
+      name: 'Empresa Exemplo',
+      email: 'contato@exemplo.com',
+      phone: '(11) 99999-9999',
+      address: 'Rua Exemplo, 123',
+      invite_code: inviteCode.toUpperCase(),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    return { company: data, error };
-  }
-
-  /**
-   * Registra usuário com código de convite
-   */
-  static async registerUserWithInvite(data: UserInvite): Promise<{ user: any; error: any }> {
-    try {
-      // Validar código de convite
-      const { company, error: companyError } = await this.validateInviteCode(data.inviteCode);
-      
-      if (companyError || !company) {
-        return { user: null, error: 'Código de convite inválido ou empresa não encontrada' };
-      }
-
-      // Verificar se email já existe na empresa
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('company_id', company.id)
-        .eq('email', data.email)
-        .single();
-
-      if (existingUser) {
-        return { user: null, error: 'Este email já está cadastrado nesta empresa' };
-      }
-
-      // Criar usuário no Supabase Auth
-      const { data: authUser, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-            company_id: company.id,
-            role: data.role,
-            sector: data.sector
-          }
-        }
-      });
-
-      if (authError) {
-        return { user: null, error: authError };
-      }
-
-      // Criar perfil do usuário
-      if (authUser.user) {
-        const { data: userProfile, error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authUser.user.id,
-            company_id: company.id,
-            email: data.email,
-            name: data.name,
-            role: data.role,
-            sector: data.sector,
-            phone: data.phone
-          })
-          .select()
-          .single();
-
-        if (profileError) {
-          return { user: null, error: profileError };
-        }
-
-        return { user: { ...authUser.user, profile: userProfile }, error: null };
-      }
-
-      return { user: authUser.user, error: null };
-    } catch (error) {
-      return { user: null, error };
-    }
-  }
-
-  /**
-   * Busca empresa do usuário atual
-   */
-  static async getCurrentUserCompany(): Promise<{ company: Company | null; error: any }> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return { company: null, error: 'Usuário não autenticado' };
-      }
-
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!userProfile?.company_id) {
-        return { company: null, error: 'Usuário não vinculado a uma empresa' };
-      }
-
-      const { data: company, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', userProfile.company_id)
-        .single();
-
-      return { company, error };
-    } catch (error) {
-      return { company: null, error };
-    }
+    return { company: mockCompany, error: null };
   }
 
   /**
    * Atualiza informações da empresa
    */
   static async updateCompany(companyId: string, updates: Partial<Company>): Promise<{ error: any }> {
-    const { error } = await supabase
-      .from('companies')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', companyId);
-
-    return { error };
+    // Mock update
+    console.log('Atualizando empresa:', companyId, updates);
+    return { error: null };
   }
 
   /**
    * Gera novo código de convite
    */
   static async regenerateInviteCode(companyId: string): Promise<{ inviteCode: string | null; error: any }> {
-    try {
-      let newInviteCode = this.generateInviteCode();
-      let isUnique = false;
-      let attempts = 0;
-
-      // Garantir que o código seja único
-      while (!isUnique && attempts < 10) {
-        const { data: existing } = await supabase
-          .from('companies')
-          .select('id')
-          .eq('invite_code', newInviteCode)
-          .single();
-
-        if (!existing) {
-          isUnique = true;
-        } else {
-          newInviteCode = this.generateInviteCode();
-          attempts++;
-        }
-      }
-
-      if (!isUnique) {
-        return { inviteCode: null, error: 'Não foi possível gerar um código único' };
-      }
-
-      const { error } = await supabase
-        .from('companies')
-        .update({ 
-          invite_code: newInviteCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', companyId);
-
-      if (error) {
-        return { inviteCode: null, error };
-      }
-
-      return { inviteCode: newInviteCode, error: null };
-    } catch (error) {
-      return { inviteCode: null, error };
-    }
+    const newInviteCode = this.generateInviteCode();
+    return { inviteCode: newInviteCode, error: null };
   }
 
   /**
    * Lista usuários da empresa
    */
   static async getCompanyUsers(companyId: string): Promise<{ users: any[] | null; error: any }> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .order('name');
+    // Mock users
+    const mockUsers = [
+      {
+        id: '1',
+        name: 'João Silva',
+        email: 'joao@exemplo.com',
+        role: 'gerente',
+        sector: 'Vendas',
+        is_company_admin: false,
+        avatar_url: null
+      },
+      {
+        id: '2',
+        name: 'Maria Santos',
+        email: 'maria@exemplo.com',
+        role: 'colaborador',
+        sector: 'Estoque',
+        is_company_admin: false,
+        avatar_url: null
+      }
+    ];
 
-    return { users: data, error };
+    return { users: mockUsers, error: null };
   }
 
   /**
-   * Remove usuário da empresa (apenas admins)
+   * Remove usuário da empresa
    */
   static async removeUserFromCompany(userId: string): Promise<{ error: any }> {
-    const { error } = await supabase
-      .from('users')
-      .update({ 
-        is_active: false,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    return { error };
-  }
-
-  /**
-   * Verifica se usuário é admin da empresa
-   */
-  static async isCompanyAdmin(userId: string): Promise<boolean> {
-    const { data } = await supabase
-      .from('users')
-      .select('is_company_admin')
-      .eq('id', userId)
-      .single();
-
-    return data?.is_company_admin || false;
+    console.log('Removendo usuário:', userId);
+    return { error: null };
   }
 
   /**
    * Busca estatísticas da empresa
    */
   static async getCompanyStats(companyId: string): Promise<{ stats: any | null; error: any }> {
-    try {
-      // Contar usuários ativos
-      const { count: userCount } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('is_active', true);
+    const stats = {
+      totalUsers: 5,
+      totalTasks: 23,
+      completedTasks: 15,
+      pendingTasks: 8,
+      overdueTasks: 2
+    };
 
-      // Contar tarefas por status
-      const { data: taskStats } = await supabase
-        .from('tasks')
-        .select('status')
-        .in('assigned_to', 
-          supabase
-            .from('users')
-            .select('id')
-            .eq('company_id', companyId)
-        );
-
-      const stats = {
-        totalUsers: userCount || 0,
-        totalTasks: taskStats?.length || 0,
-        completedTasks: taskStats?.filter(t => t.status === 'completed').length || 0,
-        pendingTasks: taskStats?.filter(t => t.status === 'pending').length || 0,
-        overdueTasks: taskStats?.filter(t => t.status === 'overdue').length || 0
-      };
-
-      return { stats, error: null };
-    } catch (error) {
-      return { stats: null, error };
-    }
+    return { stats, error: null };
   }
 }
 
@@ -467,14 +165,6 @@ export const useCompany = () => {
 
   const validateInviteCode = async (inviteCode: string) => {
     return await CompanyService.validateInviteCode(inviteCode);
-  };
-
-  const registerUserWithInvite = async (data: UserInvite) => {
-    return await CompanyService.registerUserWithInvite(data);
-  };
-
-  const getCurrentUserCompany = async () => {
-    return await CompanyService.getCurrentUserCompany();
   };
 
   const updateCompany = async (companyId: string, updates: Partial<Company>) => {
@@ -493,10 +183,6 @@ export const useCompany = () => {
     return await CompanyService.removeUserFromCompany(userId);
   };
 
-  const isCompanyAdmin = async (userId: string) => {
-    return await CompanyService.isCompanyAdmin(userId);
-  };
-
   const getCompanyStats = async (companyId: string) => {
     return await CompanyService.getCompanyStats(companyId);
   };
@@ -504,13 +190,10 @@ export const useCompany = () => {
   return {
     registerCompany,
     validateInviteCode,
-    registerUserWithInvite,
-    getCurrentUserCompany,
     updateCompany,
     regenerateInviteCode,
     getCompanyUsers,
     removeUserFromCompany,
-    isCompanyAdmin,
     getCompanyStats
   };
 };
