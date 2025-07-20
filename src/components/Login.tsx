@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompany } from '@/services/companyService';
 import { Building2, Users, BarChart3, Mail, Lock, User, MapPin, Loader2, Building, Key, Phone } from 'lucide-react';
+
 const SECTORS = ['Vendas', 'Estoque', 'Caixa', 'Entregas', 'Limpeza', 'Administração', 'Materiais Básicos', 'Tintas', 'Ferramentas'];
+
 const Login = () => {
   const {
     signIn,
@@ -19,10 +21,12 @@ const Login = () => {
   const {
     validateInviteCode
   } = useCompany();
+
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
   });
+
   const [companyData, setCompanyData] = useState({
     name: '',
     email: '',
@@ -33,6 +37,7 @@ const Login = () => {
     phone: '',
     address: ''
   });
+
   const [inviteData, setInviteData] = useState({
     inviteCode: '',
     name: '',
@@ -43,6 +48,7 @@ const Login = () => {
     role: 'colaborador' as 'gerente' | 'supervisor' | 'colaborador',
     phone: ''
   });
+
   const [inviteCodeValidation, setInviteCodeValidation] = useState<{
     isValid: boolean;
     companyName: string;
@@ -52,14 +58,21 @@ const Login = () => {
     companyName: '',
     isValidating: false
   });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginData.email || !loginData.password) {
       alert('Preencha todos os campos');
       return;
     }
-    await signIn(loginData.email, loginData.password);
+    
+    const { error } = await signIn(loginData.email, loginData.password);
+    
+    if (!error) {
+      console.log('✅ Login realizado com sucesso!');
+    }
   };
+
   const handleCompanyRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -76,7 +89,8 @@ const Login = () => {
       alert('A senha deve ter pelo menos 6 caracteres');
       return;
     }
-    await registerCompany({
+
+    const { error } = await registerCompany({
       name: companyData.name,
       email: companyData.email,
       adminName: companyData.adminName,
@@ -85,7 +99,12 @@ const Login = () => {
       phone: companyData.phone,
       address: companyData.address
     });
+
+    if (!error) {
+      console.log('✅ Empresa registrada e login automático realizado!');
+    }
   };
+
   const handleInviteRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -116,6 +135,7 @@ const Login = () => {
       phone: inviteData.phone
     });
   };
+
   const handleInviteCodeChange = async (code: string) => {
     setInviteData(prev => ({
       ...prev,
@@ -151,7 +171,9 @@ const Login = () => {
       });
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Lado esquerdo - Apresentação */}
         <div className="space-y-8">
@@ -201,31 +223,55 @@ const Login = () => {
                     <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10" value={loginData.email} onChange={e => setLoginData(prev => ({
-                      ...prev,
-                      email: e.target.value
-                    }))} disabled={loading} />
+                      <Input 
+                        id="login-email" 
+                        type="email" 
+                        placeholder="seu@email.com" 
+                        className="pl-10" 
+                        value={loginData.email} 
+                        onChange={e => setLoginData(prev => ({
+                          ...prev,
+                          email: e.target.value
+                        }))} 
+                        disabled={loading} 
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="login-password" type="password" placeholder="••••••••" className="pl-10" value={loginData.password} onChange={e => setLoginData(prev => ({
-                      ...prev,
-                      password: e.target.value
-                    }))} disabled={loading} />
+                      <Input 
+                        id="login-password" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        className="pl-10" 
+                        value={loginData.password} 
+                        onChange={e => setLoginData(prev => ({
+                          ...prev,
+                          password: e.target.value
+                        }))} 
+                        disabled={loading} 
+                      />
                     </div>
                   </div>
                   <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                    {loading ? <>
+                    {loading ? (
+                      <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Entrando...
-                      </> : 'Entrar'}
+                      </>
+                    ) : (
+                      'Entrar'
+                    )}
                   </Button>
                 </form>
                 
-                
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-600">
+                    <strong>Para testar:</strong> Use qualquer email e senha após registrar uma empresa
+                  </p>
+                </div>
               </CardContent>
             </TabsContent>
             
@@ -331,10 +377,14 @@ const Login = () => {
                   </div>
                   
                   <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                    {loading ? <>
+                    {loading ? (
+                      <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Criando empresa...
-                      </> : 'Criar Empresa'}
+                      </>
+                    ) : (
+                      'Criar Empresa'
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -461,10 +511,14 @@ const Login = () => {
                   </div>
                   
                   <Button type="submit" className="w-full" size="lg" disabled={loading || !inviteCodeValidation.isValid}>
-                    {loading ? <>
+                    {loading ? (
+                      <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Criando conta...
-                      </> : 'Criar Conta'}
+                      </>
+                    ) : (
+                      'Criar Conta'
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -472,6 +526,8 @@ const Login = () => {
           </Tabs>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Login;

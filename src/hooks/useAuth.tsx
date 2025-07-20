@@ -1,6 +1,6 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MockAuthService } from '@/services/mockAuthService';
 import { UserProfile, Company } from '@/types/database';
@@ -31,78 +31,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const loadUserProfile = async (userId: string) => {
+  const loadCurrentUser = async () => {
     try {
-      const { userProfile } = await MockAuthService.getCurrentUser();
-      if (userProfile) {
+      const { user, userProfile, company } = await MockAuthService.getCurrentUser();
+      if (user && userProfile && company) {
+        setUser(user);
         setUserProfile(userProfile);
-        
-        // Mock company data
-        const mockCompany: Company = {
-          id: '1',
-          name: 'Empresa Exemplo',
-          email: 'contato@exemplo.com',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          phone: '(11) 99999-9999',
-          address: 'Rua Exemplo, 123',
-          invite_code: 'ABC12345'
-        };
-        setCompany(mockCompany);
+        setCompany(company);
+        console.log('✅ Usuário carregado:', userProfile.name);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setCompany(null);
+        console.log('❌ Nenhum usuário autenticado');
       }
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
+      console.error('Erro ao carregar usuário:', error);
+      setUser(null);
+      setUserProfile(null);
+      setCompany(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          await loadUserProfile(session.user.id);
-        } else if (event === 'SIGNED_OUT') {
-          setUserProfile(null);
-          setCompany(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await loadUserProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    loadCurrentUser();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await MockAuthService.login(email, password);
+    console.log('🔑 Tentando fazer login...');
+    setLoading(true);
+    
+    try {
+      const { user, userProfile, company, error } = await MockAuthService.signIn(email, password);
 
-    if (error) {
-      toast({
-        title: "Erro ao entrar",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { error };
-    } else {
+      if (error) {
+        toast({
+          title: "Erro ao entrar",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      setUser(user);
+      setUserProfile(userProfile);
+      setCompany(company);
+      
       toast({
         title: "Bem-vindo!",
         description: "Login realizado com sucesso.",
       });
+      
       return { error: null };
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      toast({
+        title: "Erro ao entrar",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+      return { error };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -113,49 +105,101 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sector: string, 
     role: 'admin' | 'manager' | 'employee' = 'employee'
   ) => {
-    const { error } = await MockAuthService.register({ email, password, name, role });
+    setLoading(true);
+    
+    try {
+      const { user, userProfile, company, error } = await MockAuthService.signUp({
+        email,
+        password,
+        name,
+        role,
+        sector
+      });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Erro ao cadastrar",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      setUser(user);
+      setUserProfile(userProfile);
+      setCompany(company);
+      
+      toast({
+        title: "Cadastro realizado!",
+        description: "Conta criada com sucesso.",
+      });
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Erro no registro:', error);
       toast({
         title: "Erro ao cadastrar",
-        description: error.message,
+        description: "Ocorreu um erro inesperado",
         variant: "destructive",
       });
       return { error };
-    } else {
-      toast({
-        title: "Cadastro realizado!",
-        description: "Verifique seu email para confirmar a conta.",
-      });
-      return { error: null };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
-    const { error } = await MockAuthService.logout();
-    if (error) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    setLoading(true);
+    
+    try {
+      await MockAuthService.signOut();
+      setUser(null);
+      setUserProfile(null);
+      setCompany(null);
+      
       toast({
         title: "Até logo!",
         description: "Logout realizado com sucesso.",
       });
+    } catch (error: any) {
+      console.error('Erro no logout:', error);
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!userProfile) return { error: new Error('Usuário não autenticado') };
 
-    setUserProfile(prev => prev ? { ...prev, ...updates } : null);
-    toast({
-      title: "Perfil atualizado",
-      description: "Suas informações foram atualizadas com sucesso.",
-    });
-    return { error: null };
+    try {
+      const { userProfile: updatedProfile, error } = await MockAuthService.updateProfile(updates);
+      
+      if (error) {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      setUserProfile(updatedProfile);
+      
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram atualizadas com sucesso.",
+      });
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Erro ao atualizar perfil:', error);
+      return { error };
+    }
   };
 
   const hasPermission = (
@@ -175,12 +219,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const registerCompany = async (companyData: any) => {
-    // Mock implementation
-    toast({
-      title: "Empresa registrada!",
-      description: "Sua empresa foi criada com sucesso.",
-    });
-    return { error: null };
+    setLoading(true);
+    
+    try {
+      const { company, adminUser, error } = await MockAuthService.registerCompany(companyData);
+      
+      if (error) {
+        toast({
+          title: "Erro ao registrar empresa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      // Fazer login automático do admin
+      setUser({ id: adminUser!.id, email: adminUser!.email });
+      setUserProfile(adminUser);
+      setCompany(company);
+      
+      toast({
+        title: "Empresa registrada!",
+        description: `${company!.name} foi criada com sucesso. Você já está logado como administrador.`,
+      });
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Erro no registro da empresa:', error);
+      toast({
+        title: "Erro ao registrar empresa",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const registerWithInvite = async (inviteData: any) => {
