@@ -14,8 +14,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useRecurringTasks, RecurrencePattern } from '@/services/recurringTaskService';
-import { useAuthService } from '@/services/authService';
+import { useRecurringTasks, RecurrencePattern } from '@/services/mockRecurringTaskService';
+import { useMockAuthService } from '@/services/mockAuthService';
 import { CalendarIcon, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -75,7 +75,7 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
 }) => {
   const { toast } = useToast();
   const { createRecurringTask } = useRecurringTasks();
-  const { getUsers } = useAuthService();
+  const { getUsers } = useMockAuthService();
   const [users, setUsers] = useState<any[]>([]);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
@@ -98,7 +98,6 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
   const isRecurring = form.watch('isRecurring');
   const recurrenceType = form.watch('recurrencePattern.type');
 
-  // Carregar usuários quando o setor mudar
   React.useEffect(() => {
     const sector = form.watch('sector');
     if (sector) {
@@ -107,7 +106,7 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
   }, [form.watch('sector')]);
 
   const loadUsers = async (sector: string) => {
-    const { users: sectorUsers, error } = await getUsers(sector);
+    const { users: sectorUsers, error } = await getUsers();
     if (!error && sectorUsers) {
       setUsers(sectorUsers);
     }
@@ -124,10 +123,15 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
         priority: data.priority,
         status: 'pending' as const,
         is_recurring: data.isRecurring,
-        recurrence_pattern: data.isRecurring ? data.recurrencePattern : undefined,
-        created_by: '', // Será preenchido pelo serviço
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        recurrence_pattern: data.isRecurring && data.recurrencePattern ? {
+          type: data.recurrencePattern.type,
+          interval: data.recurrencePattern.interval,
+          daysOfWeek: data.recurrencePattern.daysOfWeek,
+          dayOfMonth: data.recurrencePattern.dayOfMonth,
+          endDate: data.recurrencePattern.endDate?.toISOString(),
+          maxOccurrences: data.recurrencePattern.maxOccurrences
+        } as RecurrencePattern : undefined,
+        created_by: '1'
       };
 
       const { error } = await createRecurringTask(taskData);
@@ -177,7 +181,6 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Informações Básicas */}
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -329,7 +332,6 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
               </div>
             </div>
 
-            {/* Configuração de Recorrência */}
             <div className="space-y-4 border-t pt-4">
               <FormField
                 control={form.control}
@@ -353,7 +355,7 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
               />
 
               {isRecurring && (
-                <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -490,7 +492,6 @@ export const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
               )}
             </div>
 
-            {/* Botões de Ação */}
             <div className="flex justify-end space-x-2 pt-4 border-t">
               {onCancel && (
                 <Button type="button" variant="outline" onClick={onCancel}>
