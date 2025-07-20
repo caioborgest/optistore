@@ -8,7 +8,6 @@ export interface Company {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  // Add missing properties that CompanySettings expects
   phone?: string;
   address?: string;
   invite_code?: string;
@@ -21,12 +20,11 @@ export interface UserProfile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  // Add missing properties that components expect
-  company_id?: string;
-  role?: 'admin' | 'manager' | 'employee';
-  sector?: string;
-  is_active?: boolean;
-  is_company_admin?: boolean;
+  company_id: string; // Make this required to match authService expectations
+  role: 'admin' | 'manager' | 'employee';
+  sector: string;
+  is_active: boolean;
+  is_company_admin: boolean;
 }
 
 export interface Task {

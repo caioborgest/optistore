@@ -15,7 +15,7 @@ import {
   Crown
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { UserProfile } from '@/services/authService';
+import { UserProfile } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

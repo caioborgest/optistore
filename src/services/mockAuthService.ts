@@ -77,7 +77,7 @@ export class MockAuthService {
         avatar_url: userData.avatar_url,
         created_at: userData.created_at,
         updated_at: userData.updated_at,
-        company_id: userData.company_id,
+        company_id: userData.company_id || '1',
         role: 'employee',
         sector: 'Geral',
         is_active: true,
