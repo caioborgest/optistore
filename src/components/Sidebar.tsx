@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
           <div className="flex items-center space-x-3">
             <Building2 className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">OptiStore</h1>
+              <h1 className="text-xl font-bold text-gray-900">OptiFlow</h1>
               <p className="text-sm text-gray-500">Material de Construção</p>
             </div>
           </div>

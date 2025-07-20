@@ -1,7 +1,7 @@
 {
-  "name": "Tijolo a Tijolo - Gestão",
-  "short_name": "TaT Gestão",
-  "description": "Sistema completo de gestão para lojas de materiais de construção",
+  "name": "OptiFlow - Gestão Operacional",
+  "short_name": "OptiFlow",
+  "description": "Sistema de gestão operacional inteligente para lojas de material de construção",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
