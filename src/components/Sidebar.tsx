@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
       { icon: MessageSquare, label: 'Chat', path: '/chat' },
     ];
 
-    if (role === 'gerente') {
+    if (role === 'admin') {
       const managerItems = [
         ...baseItems,
         { icon: Users, label: 'Usuários', path: '/users' },
@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
       return managerItems;
     }
 
-    if (role === 'supervisor') {
+    if (role === 'manager') {
       return [
         ...baseItems,
         { icon: BarChart3, label: 'Relatórios', path: '/reports' },
@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
       ];
     }
 
-    // Colaborador
+    // Employee
     return [
       ...baseItems,
       { icon: Settings, label: 'Configurações', path: '/settings' },
@@ -71,9 +71,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'gerente':
+      case 'admin':
         return <Crown className="h-3.5 w-3.5" />;
-      case 'supervisor':
+      case 'manager':
         return <Shield className="h-3.5 w-3.5" />;
       default:
         return <Users className="h-3.5 w-3.5" />;
@@ -82,20 +82,20 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'gerente':
+      case 'admin':
+        return 'Administrador';
+      case 'manager':
         return 'Gerente';
-      case 'supervisor':
-        return 'Supervisor';
       default:
-        return 'Colaborador';
+        return 'Funcionário';
     }
   };
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'gerente':
+      case 'admin':
         return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'supervisor':
+      case 'manager':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       default:
         return 'bg-green-50 text-green-700 border-green-200';
@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">OptiFlow</h1>
-              <p className="text-sm text-white/80">Material de Construção</p>
+              <p className="text-sm text-white/80">Sistema de Gestão</p>
             </div>
           </div>
           <div className="text-white">
