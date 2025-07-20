@@ -10,7 +10,9 @@ import {
   Users, 
   TrendingUp,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Activity,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -42,20 +44,20 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8 bg-gradient-to-br from-background to-muted/20 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+      <div className="flex justify-between items-start">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Bom dia, {user?.email?.split('@')[0]}! 👋
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground text-lg">
             Aqui está o resumo das atividades da sua loja hoje
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Hoje</p>
-          <p className="text-lg font-semibold text-gray-900">
+        <div className="text-right glass-card p-4 rounded-xl">
+          <p className="text-sm text-muted-foreground">Hoje</p>
+          <p className="text-lg font-semibold text-foreground">
             {new Date().toLocaleDateString('pt-BR', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -68,50 +70,66 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 gradient-primary text-white overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600"></div>
+          <CardContent className="p-6 relative">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100">Tarefas Concluídas</p>
+              <div className="space-y-1">
+                <p className="text-green-100 text-sm font-medium">Tarefas Concluídas</p>
                 <p className="text-3xl font-bold">{stats.completedTasks}</p>
+                <p className="text-xs text-green-100">+12% vs ontem</p>
               </div>
-              <CheckCircle className="h-12 w-12 text-green-200" />
+              <div className="p-3 bg-white/20 rounded-full">
+                <CheckCircle className="h-8 w-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500"></div>
+          <CardContent className="p-6 relative text-white">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-yellow-100">Pendentes</p>
+              <div className="space-y-1">
+                <p className="text-amber-100 text-sm font-medium">Pendentes</p>
                 <p className="text-3xl font-bold">{stats.pendingTasks}</p>
+                <p className="text-xs text-amber-100">-5% vs ontem</p>
               </div>
-              <Clock className="h-12 w-12 text-yellow-200" />
+              <div className="p-3 bg-white/20 rounded-full">
+                <Clock className="h-8 w-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600"></div>
+          <CardContent className="p-6 relative text-white">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100">Atrasadas</p>
+              <div className="space-y-1">
+                <p className="text-red-100 text-sm font-medium">Atrasadas</p>
                 <p className="text-3xl font-bold">{stats.overdueTasks}</p>
+                <p className="text-xs text-red-100">Atenção necessária</p>
               </div>
-              <AlertTriangle className="h-12 w-12 text-red-200" />
+              <div className="p-3 bg-white/20 rounded-full">
+                <AlertTriangle className="h-8 w-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-6">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
+          <CardContent className="p-6 relative text-white">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100">Performance</p>
+              <div className="space-y-1">
+                <p className="text-blue-100 text-sm font-medium">Performance</p>
                 <p className="text-3xl font-bold">{stats.teamPerformance}%</p>
+                <p className="text-xs text-blue-100">+8% vs mês passado</p>
               </div>
-              <TrendingUp className="h-12 w-12 text-blue-200" />
+              <div className="p-3 bg-white/20 rounded-full">
+                <TrendingUp className="h-8 w-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -119,20 +137,22 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Tasks */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
+        <Card className="lg:col-span-2 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Activity className="h-5 w-5 text-primary" />
+              </div>
               Atividades Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{task.title}</h4>
-                    <p className="text-sm text-gray-500">{task.sector} • {task.assignee}</p>
+                <div key={task.id} className="flex items-center justify-between p-4 border border-border rounded-xl hover:bg-muted/50 transition-colors">
+                  <div className="flex-1 space-y-1">
+                    <h4 className="font-semibold text-foreground">{task.title}</h4>
+                    <p className="text-sm text-muted-foreground">{task.sector} • {task.assignee}</p>
                   </div>
                   <Badge 
                     variant={
@@ -140,6 +160,7 @@ const Dashboard = () => {
                       task.status === 'overdue' ? 'destructive' :
                       task.status === 'in_progress' ? 'secondary' : 'outline'
                     }
+                    className="font-medium"
                   >
                     {task.status === 'completed' ? 'Concluída' :
                      task.status === 'overdue' ? 'Atrasada' :
@@ -152,27 +173,30 @@ const Dashboard = () => {
         </Card>
 
         {/* Upcoming Tasks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-accent/50 rounded-lg">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
               Próximas Atividades
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {upcomingTasks.map((item, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="text-sm font-medium text-gray-500 w-12">
+                <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full min-w-[3.5rem] text-center">
                     {item.time}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.task}</p>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium text-foreground">{item.task}</p>
                     <Badge 
                       variant={
                         item.priority === 'high' ? 'destructive' :
                         item.priority === 'medium' ? 'secondary' : 'outline'
                       }
+                      className="text-xs"
                     >
                       {item.priority === 'high' ? 'Alta' :
                        item.priority === 'medium' ? 'Média' : 'Baixa'}
@@ -186,37 +210,45 @@ const Dashboard = () => {
       </div>
 
       {/* Performance Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="pb-6">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <BarChart3 className="h-6 w-6 text-primary" />
+            </div>
             Progresso Mensal
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Meta Mensal</span>
-                <span>{stats.teamPerformance}% de {stats.monthlyGoal}%</span>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Meta Mensal</span>
+                <span className="text-muted-foreground">{stats.teamPerformance}% de {stats.monthlyGoal}%</span>
               </div>
               <Progress value={stats.teamPerformance} className="h-3" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">12</p>
-                <p className="text-sm text-gray-600">Colaboradores Ativos</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div className="text-center p-6 bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl border border-border">
+                <div className="p-3 bg-blue-100 rounded-full w-fit mx-auto mb-3">
+                  <Users className="h-8 w-8 text-blue-600" />
+                </div>
+                <p className="text-3xl font-bold text-foreground">12</p>
+                <p className="text-sm text-muted-foreground mt-1">Colaboradores Ativos</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <MessageSquare className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">48</p>
-                <p className="text-sm text-gray-600">Mensagens Hoje</p>
+              <div className="text-center p-6 bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl border border-border">
+                <div className="p-3 bg-green-100 rounded-full w-fit mx-auto mb-3">
+                  <MessageSquare className="h-8 w-8 text-green-600" />
+                </div>
+                <p className="text-3xl font-bold text-foreground">48</p>
+                <p className="text-sm text-muted-foreground mt-1">Mensagens Hoje</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <CheckCircle className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">156</p>
-                <p className="text-sm text-gray-600">Tarefas este Mês</p>
+              <div className="text-center p-6 bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl border border-border">
+                <div className="p-3 bg-purple-100 rounded-full w-fit mx-auto mb-3">
+                  <CheckCircle className="h-8 w-8 text-purple-600" />
+                </div>
+                <p className="text-3xl font-bold text-foreground">156</p>
+                <p className="text-sm text-muted-foreground mt-1">Tarefas este Mês</p>
               </div>
             </div>
           </div>
