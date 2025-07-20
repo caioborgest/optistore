@@ -2,11 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
   Send, 
   Paperclip, 
@@ -17,25 +14,75 @@ import {
   MoreVertical,
   Users,
   Hash,
-  Plus
+  Plus,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useMockChatService } from '@/services/mockChatService';
+import { Chat as ChatType, Message } from '@/types/database';
 
 const Chat = () => {
   const { userProfile } = useAuth();
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [chats, setChats] = useState<ChatType[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const {
-    chats,
-    messages,
-    sendMessage,
-    createChat,
-    loading
-  } = useMockChatService();
+
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockChats: ChatType[] = [
+      {
+        id: '1',
+        name: 'Equipe Geral',
+        type: 'group',
+        description: 'Chat principal da equipe',
+        created_by: userProfile?.id,
+        is_active: true,
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        name: 'Projetos',
+        type: 'channel',
+        description: 'Discussões sobre projetos',
+        created_by: userProfile?.id,
+        is_active: true,
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    const mockMessages: Message[] = [
+      {
+        id: '1',
+        chat_id: '1',
+        sender_id: userProfile?.id || '1',
+        content: 'Olá pessoal, como estão?',
+        message_type: 'text',
+        is_edited: false,
+        is_deleted: false,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        chat_id: '1',
+        sender_id: '2',
+        content: 'Tudo bem! Trabalhando no projeto.',
+        message_type: 'text',
+        is_edited: false,
+        is_deleted: false,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    setChats(mockChats);
+    setMessages(mockMessages);
+  }, [userProfile]);
 
   const filteredChats = chats.filter(chat =>
     chat.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -54,13 +101,21 @@ const Chat = () => {
   const handleSendMessage = async () => {
     if (!message.trim() || !selectedChat || !userProfile) return;
 
-    await sendMessage({
+    setLoading(true);
+    const newMessage: Message = {
+      id: Date.now().toString(),
       chat_id: selectedChat,
+      sender_id: userProfile.id,
       content: message.trim(),
-      sender_id: userProfile.id
-    });
+      message_type: 'text',
+      is_edited: false,
+      is_deleted: false,
+      created_at: new Date().toISOString()
+    };
 
+    setMessages(prev => [...prev, newMessage]);
     setMessage('');
+    setLoading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -73,11 +128,17 @@ const Chat = () => {
   const handleCreateChat = async () => {
     if (!userProfile) return;
     
-    await createChat({
+    const newChat: ChatType = {
+      id: Date.now().toString(),
       name: 'Nova Conversa',
-      type: 'group' as const,
-      created_by: userProfile.id
-    });
+      type: 'group',
+      created_by: userProfile.id,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setChats(prev => [...prev, newChat]);
   };
 
   const formatTime = (timestamp: string) => {

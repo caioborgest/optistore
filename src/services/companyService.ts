@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Company } from '@/types/database';
+import type { Company } from '@/types/database';
 
 export interface CompanyRegistration {
   name: string;
@@ -22,7 +21,7 @@ export interface UserInvite {
   phone?: string;
 }
 
-export { Company };
+export type { Company };
 
 export class CompanyService {
   /**

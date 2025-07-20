@@ -20,7 +20,7 @@ export interface UserProfile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  company_id: string; // Make this required to match authService expectations
+  company_id: string;
   role: 'admin' | 'manager' | 'employee';
   sector: string;
   is_active: boolean;
@@ -42,4 +42,47 @@ export interface Task {
   recurrence_pattern?: any;
   created_at: string;
   updated_at: string;
+}
+
+export interface Chat {
+  id: string;
+  name?: string;
+  type: 'direct' | 'group' | 'channel';
+  description?: string;
+  avatar_url?: string;
+  created_by?: string;
+  is_active: boolean;
+  last_message_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  content: string;
+  message_type: 'text' | 'image' | 'file' | 'system';
+  file_url?: string;
+  file_name?: string;
+  reply_to?: string;
+  is_edited: boolean;
+  edited_at?: string;
+  is_deleted: boolean;
+  deleted_at?: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'task_assigned' | 'task_completed' | 'task_overdue' | 'message' | 'system';
+  title: string;
+  content?: string;
+  reference_type?: string;
+  reference_id?: string;
+  is_read: boolean;
+  read_at?: string;
+  expires_at?: string;
+  created_at: string;
 }
