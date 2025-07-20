@@ -23,6 +23,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to create a mock User object that matches Supabase User type
+const createMockUser = (id: string, email: string): User => ({
+  id,
+  email,
+  app_metadata: {},
+  user_metadata: {},
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+  phone: '',
+  confirmed_at: new Date().toISOString(),
+  email_confirmed_at: new Date().toISOString(),
+  last_sign_in_at: new Date().toISOString(),
+  role: 'authenticated',
+  updated_at: new Date().toISOString()
+});
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -35,7 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { user, userProfile, company } = await MockAuthService.getCurrentUser();
       if (user && userProfile && company) {
-        setUser(user);
+        setUser(createMockUser(user.id, user.email));
         setUserProfile(userProfile);
         setCompany(company);
         console.log('✅ Usuário carregado:', userProfile.name);
@@ -75,7 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
 
-      setUser(user);
+      setUser(createMockUser(user.id, user.email));
       setUserProfile(userProfile);
       setCompany(company);
       
@@ -125,7 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
 
-      setUser(user);
+      setUser(createMockUser(user.id, user.email));
       setUserProfile(userProfile);
       setCompany(company);
       
@@ -234,7 +250,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       // Fazer login automático do admin
-      setUser({ id: adminUser!.id, email: adminUser!.email });
+      setUser(createMockUser(adminUser!.id, adminUser!.email));
       setUserProfile(adminUser);
       setCompany(company);
       
