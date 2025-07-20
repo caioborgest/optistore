@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TaskService, SimpleTask } from '@/services/taskService';
+import { useMockTasks } from '@/services/mockTaskService';
+import { Task } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -22,15 +23,19 @@ const TaskManager = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [tasks, setTasks] = useState<SimpleTask[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getTasks } = useMockTasks();
 
   // Carregar tarefas
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const tasksData = await TaskService.getTasks();
-      setTasks(tasksData);
+      const { data, error } = await getTasks();
+      if (error) {
+        throw error;
+      }
+      setTasks(data || []);
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
       toast({
@@ -47,10 +52,12 @@ const TaskManager = () => {
     loadTasks();
   }, []);
 
+  const { updateTask } = useMockTasks();
+
   // Atualizar status da tarefa
-  const updateTaskStatus = async (taskId: string, newStatus: SimpleTask['status']) => {
+  const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     try {
-      await TaskService.updateTaskStatus(taskId, newStatus);
+      await updateTask(taskId, { status: newStatus });
 
       // Atualizar estado local
       setTasks(prev => prev.map(task => 
@@ -230,15 +237,15 @@ const TaskManager = () => {
               </div>
 
               {/* Assignee */}
-              {task.assignee_name && (
+              {task.assigned_to && (
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-xs font-medium text-primary">
-                      {task.assignee_name.charAt(0)}
+                      U
                     </span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {task.assignee_name}
+                    Usuário {task.assigned_to}
                   </span>
                 </div>
               )}
@@ -257,7 +264,7 @@ const TaskManager = () => {
               <div className="flex items-center justify-between pt-2 border-t">
                 <Select
                   value={task.status}
-                  onValueChange={(value: SimpleTask['status']) => updateTaskStatus(task.id, value)}
+                  onValueChange={(value: Task['status']) => updateTaskStatus(task.id, value)}
                 >
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue />

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MockAuthService, LoginCredentials, RegisterData } from '@/services/mockAuthService';
+import { MockAuthService } from '@/services/mockAuthService';
 import { UserProfile, Company } from '@/types/database';
 
 interface AuthContextType {
@@ -33,9 +33,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loadUserProfile = async (userId: string) => {
     try {
-      const { profile } = await MockAuthService.getCurrentUserProfile();
-      if (profile) {
-        setUserProfile(profile);
+      const { userProfile } = await MockAuthService.getCurrentUser();
+      if (userProfile) {
+        setUserProfile(userProfile);
         
         // Mock company data
         const mockCompany: Company = {
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await MockAuthService.signIn({ email, password });
+    const { error } = await MockAuthService.login(email, password);
 
     if (error) {
       toast({
@@ -113,12 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sector: string, 
     role: 'admin' | 'manager' | 'employee' = 'employee'
   ) => {
-    const { error } = await MockAuthService.signUp({
-      email,
-      password,
-      name,
-      role
-    });
+    const { error } = await MockAuthService.register({ email, password, name, role });
 
     if (error) {
       toast({
@@ -137,7 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    const { error } = await MockAuthService.signOut();
+    const { error } = await MockAuthService.logout();
     if (error) {
       toast({
         title: "Erro ao sair",

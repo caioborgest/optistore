@@ -27,10 +27,9 @@ export const NotificationCenter: React.FC = () => {
   const {
     notifications,
     unreadCount,
-    isLoading,
+    loading,
     markAsRead,
-    markAllAsRead,
-    deleteNotification
+    markAllAsRead
   } = useNotifications();
 
   const getNotificationIcon = (type: string) => {
@@ -90,7 +89,7 @@ export const NotificationCenter: React.FC = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {isLoading ? (
+        {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
@@ -134,17 +133,6 @@ export const NotificationCenter: React.FC = () => {
                         {!notification.is_read && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNotification(notification.id);
-                          }}
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   </div>
