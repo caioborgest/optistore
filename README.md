@@ -1,10 +1,11 @@
-# OptiStore - Sistema de Gestão de Loja de Material de Construção
+# OptiFlow - Sistema de Gestão Operacional Inteligente
 
 Sistema completo de gestão operacional para lojas de material de construção, com foco em tarefas, comunicação interna e produtividade da equipe.
 
 ## 🚀 Funcionalidades
 
 ### ✅ **Sistema de Tarefas Avançado**
+
 - Criação e atribuição de tarefas por setor
 - **Tarefas recorrentes** (diárias, semanais, mensais)
 - Controle de status e prioridades
@@ -12,6 +13,7 @@ Sistema completo de gestão operacional para lojas de material de construção, 
 - Histórico completo de execução
 
 ### 💬 **Chat em Tempo Real**
+
 - Conversas diretas entre funcionários
 - Chats por setor e departamento
 - Chats específicos por tarefa
@@ -19,23 +21,27 @@ Sistema completo de gestão operacional para lojas de material de construção, 
 - Upload de arquivos e imagens
 
 ### 👥 **Controle de Acesso por Papel**
+
 - **Gerente**: Acesso total, relatórios globais
 - **Supervisor**: Gestão do setor, relatórios setoriais
 - **Colaborador**: Tarefas pessoais, chat da equipe
 
 ### 📊 **Dashboard Personalizado**
+
 - Métricas específicas por papel do usuário
 - Gráficos de performance e produtividade
 - Atividade recente da equipe
 - Ações rápidas contextuais
 
 ### 🔔 **Sistema de Notificações**
+
 - Notificações em tempo real
 - Alertas de tarefas atrasadas
 - Notificações de novas mensagens
 - Centro de notificações integrado
 
 ### 📱 **PWA (Progressive Web App)**
+
 - Funciona offline
 - Instalável em dispositivos móveis
 - Interface responsiva
@@ -52,19 +58,21 @@ Sistema completo de gestão operacional para lojas de material de construção, 
 
 ## 📋 Pré-requisitos
 
-- Node.js 18+ 
+- Node.js 18+
 - npm ou yarn
 - Conta no Supabase
 
 ## 🚀 Instalação e Configuração
 
 ### 1. Clone o repositório
+
 ```bash
 git clone <YOUR_GIT_URL>
-cd optistore
+cd optiflow
 ```
 
 ### 2. Instale as dependências
+
 ```bash
 npm install
 ```
@@ -87,6 +95,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 3. Verifique se todas as tabelas foram criadas
 
 ### 5. Inicie o servidor de desenvolvimento
+
 ```bash
 npm run dev
 ```
@@ -96,7 +105,7 @@ npm run dev
 Após executar o setup do banco, você pode usar estes usuários para testar:
 
 - **Gerente**: `admin@loja.com` / `123456`
-- **Supervisor**: `supervisor@loja.com` / `123456`  
+- **Supervisor**: `supervisor@loja.com` / `123456`
 - **Colaborador**: `funcionario@loja.com` / `123456`
 
 ## 📁 Estrutura do Projeto
@@ -117,21 +126,25 @@ src/
 ## 🔧 Principais Serviços
 
 ### `recurringTaskService.ts`
+
 - Criação de tarefas recorrentes
 - Geração automática de próximas ocorrências
 - Cálculo de datas baseado em padrões
 
 ### `chatService.ts`
+
 - Chat em tempo real via WebSocket
 - Diferentes tipos de conversa
 - Gerenciamento de membros
 
 ### `authService.ts`
+
 - Autenticação e autorização
 - Controle de permissões por papel
 - Gestão de perfis de usuário
 
 ### `notificationService.ts`
+
 - Sistema de notificações em tempo real
 - Diferentes tipos de notificação
 - Subscrição para eventos
@@ -139,6 +152,7 @@ src/
 ## 🎯 Como Usar
 
 ### Para Gerentes
+
 1. Acesse o dashboard gerencial
 2. Visualize métricas de toda a loja
 3. Crie tarefas globais e recorrentes
@@ -146,6 +160,7 @@ src/
 5. Acesse relatórios completos
 
 ### Para Supervisores
+
 1. Gerencie tarefas do seu setor
 2. Atribua atividades à equipe
 3. Acompanhe performance setorial
@@ -153,6 +168,7 @@ src/
 5. Aprove horas trabalhadas
 
 ### Para Colaboradores
+
 1. Visualize suas tarefas pendentes
 2. Atualize status das atividades
 3. Participe dos chats da equipe
@@ -178,12 +194,14 @@ src/
 ## 🚀 Deploy
 
 ### Vercel (Recomendado)
+
 ```bash
 npm run build
 # Deploy via Vercel CLI ou GitHub integration
 ```
 
 ### Netlify
+
 ```bash
 npm run build
 # Upload da pasta dist/ para Netlify
@@ -204,10 +222,11 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 ## 📞 Suporte
 
 Para suporte e dúvidas:
+
 - Abra uma issue no GitHub
 - Entre em contato via email
 - Consulte a documentação técnica
 
 ---
 
-**OptiStore** - Transformando a gestão operacional de lojas de material de construção! 🏗️
+**OptiFlow** - Transformando a gestão operacional de lojas de material de construção! 🏗️

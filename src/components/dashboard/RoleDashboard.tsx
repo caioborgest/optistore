@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,55 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Handlers para os botões de ação rápida
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'users':
+        navigate('/users');
+        break;
+      case 'reports':
+        navigate('/reports');
+        break;
+      case 'tasks':
+        navigate('/tasks');
+        break;
+      case 'chat':
+        navigate('/chat');
+        break;
+      case 'calendar':
+        navigate('/calendar');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      case 'new-task':
+        // Aqui poderia abrir um modal para criar nova tarefa
+        toast({
+          title: 'Nova Tarefa',
+          description: 'Funcionalidade em desenvolvimento',
+        });
+        break;
+      case 'team':
+        toast({
+          title: 'Equipe do Setor',
+          description: 'Funcionalidade em desenvolvimento',
+        });
+        break;
+      case 'progress':
+        toast({
+          title: 'Meu Progresso',
+          description: 'Funcionalidade em desenvolvimento',
+        });
+        break;
+      default:
+        toast({
+          title: 'Ação não implementada',
+          description: 'Esta funcionalidade está em desenvolvimento',
+        });
+    }
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -347,19 +397,19 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {userProfile.role === 'gerente' && (
               <>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('users')}>
                   <Users className="h-6 w-6 mb-2" />
                   Gerenciar Usuários
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('reports')}>
                   <BarChart3 className="h-6 w-6 mb-2" />
                   Relatórios
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('new-task')}>
                   <Target className="h-6 w-6 mb-2" />
                   Nova Tarefa Global
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('chat')}>
                   <MessageSquare className="h-6 w-6 mb-2" />
                   Chat Geral
                 </Button>
@@ -368,19 +418,19 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
 
             {userProfile.role === 'supervisor' && (
               <>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('new-task')}>
                   <Target className="h-6 w-6 mb-2" />
                   Nova Tarefa
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('team')}>
                   <Users className="h-6 w-6 mb-2" />
                   Equipe do Setor
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('reports')}>
                   <BarChart3 className="h-6 w-6 mb-2" />
                   Relatório Setorial
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('chat')}>
                   <MessageSquare className="h-6 w-6 mb-2" />
                   Chat do Setor
                 </Button>
@@ -389,19 +439,19 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
 
             {userProfile.role === 'colaborador' && (
               <>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('tasks')}>
                   <CheckCircle className="h-6 w-6 mb-2" />
                   Minhas Tarefas
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('calendar')}>
                   <Calendar className="h-6 w-6 mb-2" />
                   Calendário
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('chat')}>
                   <MessageSquare className="h-6 w-6 mb-2" />
                   Mensagens
                 </Button>
-                <Button variant="outline" className="h-20 flex-col">
+                <Button variant="outline" className="h-20 flex-col" onClick={() => handleQuickAction('progress')}>
                   <Award className="h-6 w-6 mb-2" />
                   Meu Progresso
                 </Button>
