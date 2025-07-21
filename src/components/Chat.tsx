@@ -1,316 +1,436 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Send, 
-  Paperclip, 
-  Smile, 
-  Search,
-  Phone,
-  Video,
-  MoreVertical,
-  Users,
-  Hash,
-  Plus,
-  MessageSquare
-} from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Send, Plus, Users, MessageCircle, Hash } from 'lucide-react';
+import { ChatService } from '@/services/chatService';
 import { Chat as ChatType, Message } from '@/types/database';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Chat = () => {
-  const { userProfile } = useAuth();
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [chats, setChats] = useState<ChatType[]>([]);
+  const [selectedChat, setSelectedChat] = useState<ChatType | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isCreateChatOpen, setIsCreateChatOpen] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
+  const [newChatType, setNewChatType] = useState<'direct' | 'group'>('group');
+  
+  const { userProfile } = useAuth();
+  const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockChats: ChatType[] = [
-      {
-        id: '1',
-        name: 'Equipe Geral',
-        type: 'group',
-        description: 'Chat principal da equipe',
-        created_by: userProfile?.id,
-        is_active: true,
-        last_message_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: '2',
-        name: 'Projetos',
-        type: 'channel',
-        description: 'Discussões sobre projetos',
-        created_by: userProfile?.id,
-        is_active: true,
-        last_message_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    ];
-
-    const mockMessages: Message[] = [
-      {
-        id: '1',
-        chat_id: '1',
-        sender_id: userProfile?.id || '1',
-        content: 'Olá pessoal, como estão?',
-        message_type: 'text',
-        is_edited: false,
-        is_deleted: false,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: '2',
-        chat_id: '1',
-        sender_id: '2',
-        content: 'Tudo bem! Trabalhando no projeto.',
-        message_type: 'text',
-        is_edited: false,
-        is_deleted: false,
-        created_at: new Date().toISOString()
-      }
-    ];
-
-    setChats(mockChats);
-    setMessages(mockMessages);
-  }, [userProfile]);
-
-  const filteredChats = chats.filter(chat =>
-    chat.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const currentMessages = messages.filter(msg => msg.chat_id === selectedChat);
-
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentMessages]);
+  }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedChat || !userProfile) return;
-
-    setLoading(true);
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      chat_id: selectedChat,
-      sender_id: userProfile.id,
-      content: message.trim(),
-      message_type: 'text',
-      is_edited: false,
-      is_deleted: false,
-      created_at: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setMessage('');
-    setLoading(false);
+  const loadChats = async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar canais/grupos
+      const { channels, error: channelsError } = await ChatService.getChannels();
+      if (channelsError) {
+        console.error('Erro ao carregar canais:', channelsError);
+      }
+      
+      // Carregar chats de grupo do usuário
+      if (userProfile?.id) {
+        const { chats: groupChats, error: groupError } = await ChatService.getGroupChats(userProfile.id);
+        if (groupError) {
+          console.error('Erro ao carregar chats de grupo:', groupError);
+        }
+        
+        // Combinar canais e chats de grupo
+        const allChats = [...(channels || []), ...(groupChats || [])];
+        setChats(allChats);
+        
+        // Selecionar primeiro chat se disponível
+        if (allChats.length > 0 && !selectedChat) {
+          setSelectedChat(allChats[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar chats:', error);
+      toast({
+        title: 'Erro ao carregar chats',
+        description: 'Ocorreu um erro ao carregar os chats',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  const loadMessages = async (chatId: string) => {
+    try {
+      const { messages, error } = await ChatService.getChatMessages(chatId);
+      
+      if (error) {
+        console.error('Erro ao carregar mensagens:', error);
+        return;
+      }
+      
+      setMessages(messages || []);
+    } catch (error) {
+      console.error('Erro ao carregar mensagens:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadChats();
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (selectedChat) {
+      loadMessages(selectedChat.id);
+      
+      // Configurar listener para mensagens em tempo real
+      const channel = supabase
+        .channel('messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `chat_id=eq.${selectedChat.id}`
+          },
+          (payload) => {
+            setMessages(prev => [...prev, payload.new as Message]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [selectedChat]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedChat || !userProfile?.id) return;
+
+    try {
+      const { message, error } = await ChatService.sendMessage(
+        selectedChat.id,
+        newMessage.trim(),
+        userProfile.id
+      );
+
+      if (error) {
+        toast({
+          title: 'Erro ao enviar mensagem',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setNewMessage('');
+      // A mensagem será adicionada via realtime
+    } catch (error) {
+      toast({
+        title: 'Erro ao enviar mensagem',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
     }
   };
 
   const handleCreateChat = async () => {
-    if (!userProfile) return;
-    
-    const newChat: ChatType = {
-      id: Date.now().toString(),
-      name: 'Nova Conversa',
-      type: 'group',
-      created_by: userProfile.id,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    if (!newChatName.trim()) return;
 
-    setChats(prev => [...prev, newChat]);
+    try {
+      const { chat, error } = await ChatService.createChat(
+        newChatName.trim(),
+        newChatType,
+        [] // Por enquanto, criamos sem membros adicionais
+      );
+
+      if (error) {
+        toast({
+          title: 'Erro ao criar chat',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setChats([chat, ...chats]);
+      setNewChatName('');
+      setIsCreateChatOpen(false);
+      
+      toast({
+        title: 'Chat criado',
+        description: 'Chat criado com sucesso'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro ao criar chat',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatMessageTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
     });
   };
 
-  const selectedChatData = chats.find(chat => chat.id === selectedChat);
+  const formatMessageDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Hoje';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Ontem';
+    } else {
+      return date.toLocaleDateString('pt-BR');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex bg-background">
-      {/* Sidebar com lista de chats */}
-      <div className="w-80 border-r border-border flex flex-col">
-        {/* Header do sidebar */}
-        <div className="p-4 border-b border-border">
+    <div className="flex h-[600px] border rounded-lg overflow-hidden">
+      {/* Sidebar - Lista de Chats */}
+      <div className="w-1/3 border-r bg-gray-50">
+        <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Conversas</h2>
-            <Button size="sm" onClick={handleCreateChat} disabled={loading}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar conversas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        {/* Lista de chats */}
-        <ScrollArea className="flex-1">
-          <div className="p-2">
-            {filteredChats.map((chat) => (
-              <div
-                key={chat.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent ${
-                  selectedChat === chat.id ? 'bg-accent' : ''
-                }`}
-                onClick={() => setSelectedChat(chat.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={chat.avatar_url} />
-                    <AvatarFallback>
-                      {chat.type === 'group' ? <Users className="h-5 w-5" /> : <Hash className="h-5 w-5" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium truncate">{chat.name || 'Chat'}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {chat.last_message_at ? formatTime(chat.last_message_at) : ''}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {chat.description || 'Nenhuma mensagem'}
-                    </p>
+            <h2 className="text-lg font-semibold">Conversas</h2>
+            
+            <Dialog open={isCreateChatOpen} onOpenChange={setIsCreateChatOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Nova Conversa</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="chat-name">Nome da Conversa</Label>
+                    <Input
+                      id="chat-name"
+                      value={newChatName}
+                      onChange={(e) => setNewChatName(e.target.value)}
+                      placeholder="Digite o nome da conversa"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="chat-type">Tipo</Label>
+                    <Select value={newChatType} onValueChange={(value: 'direct' | 'group') => setNewChatType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="group">Grupo</SelectItem>
+                        <SelectItem value="direct">Direto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button onClick={handleCreateChat} className="flex-1">
+                      Criar
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsCreateChatOpen(false)}>
+                      Cancelar
+                    </Button>
                   </div>
                 </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        
+        <ScrollArea className="flex-1">
+          <div className="p-2">
+            {chats.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma conversa encontrada</p>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {chats.map((chat) => (
+                  <Card
+                    key={chat.id}
+                    className={`cursor-pointer hover:bg-gray-100 transition-colors ${
+                      selectedChat?.id === chat.id ? 'bg-blue-50 border-blue-200' : ''
+                    }`}
+                    onClick={() => setSelectedChat(chat)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={chat.avatar_url} />
+                          <AvatarFallback>
+                            {chat.type === 'group' ? <Hash className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium truncate">
+                              {chat.name || 'Conversa sem nome'}
+                            </p>
+                            <Badge variant="outline" className="text-xs">
+                              {chat.type === 'group' ? 'Grupo' : 'Direto'}
+                            </Badge>
+                          </div>
+                          {chat.last_message_at && (
+                            <p className="text-xs text-gray-500">
+                              {formatMessageTime(chat.last_message_at)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Área principal do chat */}
+      {/* Área de Mensagens */}
       <div className="flex-1 flex flex-col">
         {selectedChat ? (
           <>
-            {/* Header do chat */}
-            <div className="p-4 border-b border-border bg-card">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={selectedChatData?.avatar_url} />
-                    <AvatarFallback>
-                      {selectedChatData?.type === 'group' ? <Users className="h-5 w-5" /> : <Hash className="h-5 w-5" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold">{selectedChatData?.name || 'Chat'}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedChatData?.type === 'group' ? 'Grupo' : 'Conversa direta'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Video className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+            {/* Header da Conversa */}
+            <div className="p-4 border-b bg-white">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={selectedChat.avatar_url} />
+                  <AvatarFallback>
+                    {selectedChat.type === 'group' ? <Hash className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold">{selectedChat.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedChat.type === 'group' ? 'Grupo' : 'Conversa Direta'}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Área das mensagens */}
+            {/* Mensagens */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {currentMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.sender_id === userProfile?.id ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        msg.sender_id === userProfile?.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm">{msg.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {formatTime(msg.created_at)}
-                      </p>
-                    </div>
+                {messages.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma mensagem ainda</p>
+                    <p className="text-sm">Seja o primeiro a enviar uma mensagem!</p>
                   </div>
-                ))}
+                ) : (
+                  messages.map((message, index) => {
+                    const isCurrentUser = message.sender_id === userProfile?.id;
+                    const showDate = index === 0 || 
+                      formatMessageDate(message.created_at) !== formatMessageDate(messages[index - 1].created_at);
+                    
+                    return (
+                      <div key={message.id}>
+                        {showDate && (
+                          <div className="text-center my-4">
+                            <Separator className="mb-2" />
+                            <span className="text-xs text-gray-500 bg-white px-2">
+                              {formatMessageDate(message.created_at)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className={`flex gap-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                          {!isCurrentUser && (
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback>
+                                {message.sender?.name?.charAt(0) || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          
+                          <div className={`max-w-xs lg:max-w-md ${isCurrentUser ? 'order-1' : 'order-2'}`}>
+                            <div className={`rounded-lg p-3 ${
+                              isCurrentUser 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-100 text-gray-900'
+                            }`}>
+                              {!isCurrentUser && (
+                                <p className="text-xs font-medium mb-1 opacity-75">
+                                  {message.sender?.name || 'Usuário'}
+                                </p>
+                              )}
+                              <p className="text-sm">{message.content}</p>
+                            </div>
+                            <p className={`text-xs mt-1 ${
+                              isCurrentUser ? 'text-right text-gray-500' : 'text-left text-gray-500'
+                            }`}>
+                              {formatMessageTime(message.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
               </div>
-              <div ref={messagesEndRef} />
             </ScrollArea>
 
-            {/* Input de mensagem */}
-            <div className="p-4 border-t border-border bg-card">
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <div className="flex-1 relative">
-                  <Input
-                    placeholder="Digite sua mensagem..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="pr-12"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                  >
-                    <Smile className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button onClick={handleSendMessage} disabled={!message.trim() || loading}>
+            {/* Input de Mensagem */}
+            <div className="p-4 border-t bg-white">
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </>
         ) : (
-          /* Estado vazio */
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center">
-              <div className="rounded-full bg-muted p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <MessageSquare className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Selecione uma conversa</h3>
-              <p className="text-muted-foreground">
-                Escolha uma conversa da lista para começar a conversar
-              </p>
+              <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Selecione uma conversa para começar</p>
             </div>
           </div>
         )}
