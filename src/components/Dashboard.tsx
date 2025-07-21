@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,10 +48,8 @@ const Dashboard = () => {
       setTasks(userTasks);
       
       // Carregar notificações
-      if (userProfile?.id) {
-        const { notifications: notificationsData } = await NotificationService.getNotifications(userProfile.id);
-        setNotifications(notificationsData || []);
-      }
+      const { data: notificationsData } = await NotificationService.getNotifications();
+      setNotifications(notificationsData || []);
       
       // Calcular estatísticas
       const totalTasks = userTasks.length;
@@ -79,6 +76,8 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  // Dados para gráficos
 
   // Dados para gráficos
   const tasksByStatus = [
@@ -133,11 +132,7 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
-            {userProfile?.role === 'admin' ? 'Administrador' : 
-             userProfile?.role === 'manager' ? 'Gerente' : 'Funcionário'}
-          </Badge>
-          <Badge variant="secondary" className="text-sm">
-            {userProfile?.sector || 'Setor não definido'}
+            {userProfile?.is_company_admin ? 'Administrador' : 'Funcionário'}
           </Badge>
         </div>
       </div>
@@ -368,7 +363,7 @@ const Dashboard = () => {
       </div>
 
       {/* Seção de Setores (apenas para admins e gerentes) */}
-      {(userProfile?.role === 'admin' || userProfile?.role === 'manager') && (
+      {(userProfile?.is_company_admin) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

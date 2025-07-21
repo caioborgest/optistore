@@ -8,14 +8,13 @@ export const ChatService = {
       const { data, error } = await supabase
         .from('chats')
         .select('*')
-        .eq('type', 'channel')
+        .eq('type', 'group')
         .order('created_at', { ascending: false });
 
       if (error) {
         return { error: { message: error.message } };
       }
 
-      // Map database types to our Chat interface
       const chats: Chat[] = data?.map(chat => ({
         ...chat,
         type: chat.type as Chat['type'],
@@ -118,19 +117,13 @@ export const ChatService = {
     }
   },
 
-  async sendMessage(chatId: string, content: string): Promise<{ data?: Message; error?: { message: string } }> {
+  async sendMessage(chatId: string, content: string, userId: string): Promise<{ data?: Message; error?: { message: string } }> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        return { error: { message: 'Usuário não autenticado' } };
-      }
-
       const { data, error } = await supabase
         .from('messages')
         .insert([{
           chat_id: chatId,
-          sender_id: user.id,
+          sender_id: userId,
           content,
           message_type: 'text',
         }])
@@ -166,7 +159,7 @@ export const ChatService = {
     }
   },
 
-  async createChat(name: string, type: Chat['type'], description?: string): Promise<{ data?: Chat; error?: { message: string } }> {
+  async createChat(name: string, type: Chat['type'], memberIds: string[]): Promise<{ data?: Chat; error?: { message: string } }> {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -179,7 +172,6 @@ export const ChatService = {
         .insert([{
           name,
           type,
-          description,
           created_by: user.id,
         }])
         .select()
@@ -189,7 +181,7 @@ export const ChatService = {
         return { error: { message: error.message } };
       }
 
-      // Add creator as member
+      // Add creator as admin
       await supabase
         .from('chat_members')
         .insert([{

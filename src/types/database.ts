@@ -10,7 +10,7 @@ export interface Company {
   updated_at: string;
   phone?: string;
   address?: string;
-  invite_code?: string;
+  invite_code: string; // Required in database
 }
 
 export interface UserProfile {
@@ -21,11 +21,9 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
   company_id?: string;
-  role: 'admin' | 'manager' | 'employee';
-  is_active: boolean;
   is_company_admin: boolean;
-  phone?: string;
-  last_login?: string;
+  // Note: role and is_active are not in the actual database schema
+  // They need to be added to the database or handled differently
 }
 
 export interface Task {
@@ -53,7 +51,7 @@ export interface Task {
 export interface Chat {
   id: string;
   name?: string;
-  type: 'direct' | 'group' | 'channel';
+  type: 'direct' | 'group' | 'sector' | 'task'; // Match database enum
   description?: string;
   avatar_url?: string;
   created_by?: string;

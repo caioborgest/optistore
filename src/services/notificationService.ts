@@ -36,38 +36,11 @@ export const NotificationService = {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({
+        .update({ 
           is_read: true,
-          read_at: new Date().toISOString(),
+          read_at: new Date().toISOString()
         })
         .eq('id', notificationId);
-
-      if (error) {
-        return { error: { message: error.message } };
-      }
-
-      return {};
-    } catch (error: any) {
-      return { error: { message: error.message } };
-    }
-  },
-
-  async markAllAsRead(): Promise<{ error?: { message: string } }> {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        return { error: { message: 'Usuário não autenticado' } };
-      }
-
-      const { error } = await supabase
-        .from('notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
 
       if (error) {
         return { error: { message: error.message } };
@@ -91,7 +64,12 @@ export const NotificationService = {
         return { error: { message: error.message } };
       }
 
-      return { data: data as Notification };
+      const createdNotification: Notification = {
+        ...data,
+        type: data.type as Notification['type'],
+      };
+
+      return { data: createdNotification };
     } catch (error: any) {
       return { error: { message: error.message } };
     }
@@ -114,7 +92,7 @@ export const NotificationService = {
     }
   },
 
-  async getUnreadCount(): Promise<{ data?: number; error?: { message: string } }> {
+  async markAllAsRead(): Promise<{ error?: { message: string } }> {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -122,9 +100,12 @@ export const NotificationService = {
         return { error: { message: 'Usuário não autenticado' } };
       }
 
-      const { count, error } = await supabase
+      const { error } = await supabase
         .from('notifications')
-        .select('*', { count: 'exact', head: true })
+        .update({ 
+          is_read: true,
+          read_at: new Date().toISOString()
+        })
         .eq('user_id', user.id)
         .eq('is_read', false);
 
@@ -132,7 +113,7 @@ export const NotificationService = {
         return { error: { message: error.message } };
       }
 
-      return { data: count || 0 };
+      return {};
     } catch (error: any) {
       return { error: { message: error.message } };
     }

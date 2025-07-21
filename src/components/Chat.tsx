@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,21 +42,21 @@ const Chat = () => {
     try {
       setLoading(true);
       
-      // Carregar canais/grupos
-      const { channels, error: channelsError } = await ChatService.getChannels();
-      if (channelsError) {
-        console.error('Erro ao carregar canais:', channelsError);
+      // Carregar chats gerais
+      const { data: generalChats, error: generalError } = await ChatService.getChats();
+      if (generalError) {
+        console.error('Erro ao carregar chats gerais:', generalError);
       }
       
       // Carregar chats de grupo do usuário
       if (userProfile?.id) {
-        const { chats: groupChats, error: groupError } = await ChatService.getGroupChats(userProfile.id);
+        const { data: groupChats, error: groupError } = await ChatService.getGroupChats(userProfile.id);
         if (groupError) {
           console.error('Erro ao carregar chats de grupo:', groupError);
         }
         
-        // Combinar canais e chats de grupo
-        const allChats = [...(channels || []), ...(groupChats || [])];
+        // Combinar chats gerais e de grupo
+        const allChats = [...(generalChats || []), ...(groupChats || [])];
         setChats(allChats);
         
         // Selecionar primeiro chat se disponível
@@ -79,14 +78,14 @@ const Chat = () => {
 
   const loadMessages = async (chatId: string) => {
     try {
-      const { messages, error } = await ChatService.getChatMessages(chatId);
+      const { data: messagesData, error } = await ChatService.getMessages(chatId);
       
       if (error) {
         console.error('Erro ao carregar mensagens:', error);
         return;
       }
       
-      setMessages(messages || []);
+      setMessages(messagesData || []);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     }
@@ -127,7 +126,7 @@ const Chat = () => {
     if (!newMessage.trim() || !selectedChat || !userProfile?.id) return;
 
     try {
-      const { message, error } = await ChatService.sendMessage(
+      const { data: messageData, error } = await ChatService.sendMessage(
         selectedChat.id,
         newMessage.trim(),
         userProfile.id
@@ -157,7 +156,7 @@ const Chat = () => {
     if (!newChatName.trim()) return;
 
     try {
-      const { chat, error } = await ChatService.createChat(
+      const { data: chatData, error } = await ChatService.createChat(
         newChatName.trim(),
         newChatType,
         [] // Por enquanto, criamos sem membros adicionais
@@ -172,7 +171,9 @@ const Chat = () => {
         return;
       }
 
-      setChats([chat, ...chats]);
+      if (chatData) {
+        setChats([chatData, ...chats]);
+      }
       setNewChatName('');
       setIsCreateChatOpen(false);
       

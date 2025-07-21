@@ -39,11 +39,7 @@ export const AuthService = {
       }
 
       return { 
-        user: {
-          ...profile,
-          role: profile.role || 'employee',
-          is_active: profile.is_active || true,
-        }, 
+        user: profile,
         company: profile.companies 
       };
     } catch (error: any) {
@@ -79,8 +75,6 @@ export const AuthService = {
             id: data.user.id,
             name,
             email,
-            role: 'employee',
-            is_active: true,
             is_company_admin: false,
           },
         ])
@@ -137,11 +131,7 @@ export const AuthService = {
       }
 
       return { 
-        user: {
-          ...profile,
-          role: profile.role || 'employee',
-          is_active: profile.is_active || true,
-        }, 
+        user: profile,
         company: profile.companies 
       };
     } catch (error: any) {
@@ -182,9 +172,15 @@ export const AuthService = {
         return { error: 'Usuário não autenticado' };
       }
 
+      // Generate unique invite code
+      const inviteCode = Math.random().toString(36).substring(2, 15);
+
       const { data: company, error } = await supabase
         .from('companies')
-        .insert([companyData])
+        .insert([{
+          ...companyData,
+          invite_code: inviteCode,
+        }])
         .select()
         .single();
 
@@ -198,7 +194,6 @@ export const AuthService = {
         .update({
           company_id: company.id,
           is_company_admin: true,
-          role: 'admin',
         })
         .eq('id', user.id);
 
@@ -236,7 +231,6 @@ export const AuthService = {
         .from('users')
         .update({
           company_id: company.id,
-          role: 'employee',
         })
         .eq('id', user.id);
 
