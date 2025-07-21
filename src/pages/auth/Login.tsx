@@ -55,7 +55,7 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <span className="text-4xl font-bold">
-            <span className="text-green-500">Opti</span>
+            <span className="text-primary">Opti</span>
             <span className="text-gray-800">Flow</span>
           </span>
         </div>
@@ -74,7 +74,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 border-gray-300 focus:border-primary focus:ring-primary"
               />
             </div>
             
@@ -93,7 +93,7 @@ const Login = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               disabled={loading}
             >
               {loading ? (

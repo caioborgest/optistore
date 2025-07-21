@@ -45,14 +45,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       setLoading(true);
-      const { user, company } = await AuthService.getCurrentUser();
+      const { user, company, error } = await AuthService.getCurrentUser();
       
-      if (user) {
+      if (error) {
+        console.log('Usuário não autenticado:', error);
+        setUser(null);
+        setCompany(null);
+      } else if (user) {
         setUser(user);
         setCompany(company || null);
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
+      setUser(null);
+      setCompany(null);
     } finally {
       setLoading(false);
     }

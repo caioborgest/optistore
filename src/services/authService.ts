@@ -1,6 +1,5 @@
-
-import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, Company } from '@/types/database';
+import { supabase } from "@/integrations/supabase/client";
+import { UserProfile, Company } from "@/types/database";
 
 interface AuthResponse {
   user?: any;
@@ -21,44 +20,48 @@ export const AuthService = {
       }
 
       if (!data.user) {
-        return { error: 'Falha na autenticação' };
+        return { error: "Falha na autenticação" };
       }
 
       // Get user profile
       const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
+        .from("users")
+        .select("*")
+        .eq("id", data.user.id)
         .single();
 
       if (profileError) {
-        return { error: 'Erro ao carregar perfil do usuário' };
+        return { error: "Erro ao carregar perfil do usuário" };
       }
 
       // Get company if user has one
       let company = null;
       if (profile.company_id) {
         const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', profile.company_id)
+          .from("companies")
+          .select("*")
+          .eq("id", profile.company_id)
           .single();
-        
+
         if (!companyError) {
           company = companyData;
         }
       }
 
-      return { 
+      return {
         user: profile,
-        company 
+        company,
       };
     } catch (error: any) {
       return { error: error.message };
     }
   },
 
-  async signUp(email: string, password: string, name: string): Promise<AuthResponse> {
+  async signUp(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<AuthResponse> {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -75,12 +78,12 @@ export const AuthService = {
       }
 
       if (!data.user) {
-        return { error: 'Falha no cadastro' };
+        return { error: "Falha no cadastro" };
       }
 
       // Create user profile
       const { data: profile, error: profileError } = await supabase
-        .from('users')
+        .from("users")
         .insert([
           {
             id: data.user.id,
@@ -93,7 +96,7 @@ export const AuthService = {
         .single();
 
       if (profileError) {
-        return { error: 'Erro ao criar perfil do usuário' };
+        return { error: "Erro ao criar perfil do usuário" };
       }
 
       return { user: profile };
@@ -105,7 +108,7 @@ export const AuthService = {
   async signOut(): Promise<{ error?: string }> {
     try {
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         return { error: error.message };
       }
@@ -116,63 +119,96 @@ export const AuthService = {
     }
   },
 
-  async getCurrentUser(): Promise<{ user?: UserProfile; company?: Company; error?: string }> {
+  async getCurrentUser(): Promise<{
+    user?: UserProfile;
+    company?: Company;
+    error?: string;
+  }> {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
       if (error) {
+        console.error("Auth error:", error);
         return { error: error.message };
       }
 
       if (!user) {
-        return { error: 'Usuário não autenticado' };
+        return { error: "Usuário não autenticado" };
       }
 
       const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
         .single();
 
       if (profileError) {
-        return { error: 'Erro ao carregar perfil do usuário' };
+        console.error("Profile error:", profileError);
+        // Se o perfil não existe, criar um básico
+        if (profileError.code === "PGRST116") {
+          const basicProfile = {
+            id: user.id,
+            name: user.email?.split("@")[0] || "Usuário",
+            email: user.email || "",
+            is_company_admin: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          return { user: basicProfile };
+        }
+        return { error: "Erro ao carregar perfil do usuário" };
       }
 
       // Get company if user has one
       let company = null;
       if (profile.company_id) {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', profile.company_id)
-          .single();
-        
-        if (!companyError) {
-          company = companyData;
+        try {
+          const { data: companyData, error: companyError } = await supabase
+            .from("companies")
+            .select("*")
+            .eq("id", profile.company_id)
+            .single();
+
+          if (!companyError) {
+            company = companyData;
+          }
+        } catch (companyErr) {
+          console.error("Company fetch error:", companyErr);
+          // Continue without company data
         }
       }
 
-      return { 
+      return {
         user: profile,
-        company 
+        company,
       };
     } catch (error: any) {
-      return { error: error.message };
+      console.error("getCurrentUser error:", error);
+      return { error: error.message || "Erro desconhecido" };
     }
   },
 
-  async updateProfile(updates: Partial<UserProfile>): Promise<{ user?: UserProfile; error?: string }> {
+  async updateProfile(
+    updates: Partial<UserProfile>
+  ): Promise<{ user?: UserProfile; error?: string }> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        return { error: 'Usuário não autenticado' };
+        return { error: "Usuário não autenticado" };
       }
 
       const { data: profile, error } = await supabase
-        .from('users')
+        .from("users")
         .update(updates)
-        .eq('id', user.id)
+        .eq("id", user.id)
         .select()
         .single();
 
@@ -186,23 +222,30 @@ export const AuthService = {
     }
   },
 
-  async registerCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<AuthResponse> {
+  async registerCompany(
+    companyData: Omit<Company, "id" | "created_at" | "updated_at">
+  ): Promise<AuthResponse> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        return { error: 'Usuário não autenticado' };
+        return { error: "Usuário não autenticado" };
       }
 
       // Generate unique invite code
       const inviteCode = Math.random().toString(36).substring(2, 15);
 
       const { data: company, error } = await supabase
-        .from('companies')
-        .insert([{
-          ...companyData,
-          invite_code: inviteCode,
-        }])
+        .from("companies")
+        .insert([
+          {
+            ...companyData,
+            invite_code: inviteCode,
+          },
+        ])
         .select()
         .single();
 
@@ -212,12 +255,12 @@ export const AuthService = {
 
       // Update user to be company admin
       const { error: updateError } = await supabase
-        .from('users')
+        .from("users")
         .update({
           company_id: company.id,
           is_company_admin: true,
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (updateError) {
         return { error: updateError.message };
@@ -229,44 +272,48 @@ export const AuthService = {
     }
   },
 
-  async registerWithInvite(inviteCode: string, userData?: { name: string; email: string; password: string }): Promise<AuthResponse> {
+  async registerWithInvite(
+    inviteCode: string,
+    userData?: { name: string; email: string; password: string }
+  ): Promise<AuthResponse> {
     try {
       // Find company by invite code first
       const { data: company, error: companyError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('invite_code', inviteCode)
+        .from("companies")
+        .select("*")
+        .eq("invite_code", inviteCode)
         .single();
 
       if (companyError) {
-        return { error: 'Código de convite inválido' };
+        return { error: "Código de convite inválido" };
       }
 
       let user: any;
 
       if (userData) {
         // Create new user account
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email: userData.email,
-          password: userData.password,
-          options: {
-            data: {
-              name: userData.name,
+        const { data: authData, error: signUpError } =
+          await supabase.auth.signUp({
+            email: userData.email,
+            password: userData.password,
+            options: {
+              data: {
+                name: userData.name,
+              },
             },
-          },
-        });
+          });
 
         if (signUpError) {
           return { error: signUpError.message };
         }
 
         if (!authData.user) {
-          return { error: 'Falha no cadastro' };
+          return { error: "Falha no cadastro" };
         }
 
         // Create user profile with company
         const { data: profile, error: profileError } = await supabase
-          .from('users')
+          .from("users")
           .insert([
             {
               id: authData.user.id,
@@ -280,25 +327,28 @@ export const AuthService = {
           .single();
 
         if (profileError) {
-          return { error: 'Erro ao criar perfil do usuário' };
+          return { error: "Erro ao criar perfil do usuário" };
         }
 
         user = profile;
       } else {
         // Update existing authenticated user
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser();
 
         if (authError || !authUser) {
-          return { error: 'Usuário não autenticado' };
+          return { error: "Usuário não autenticado" };
         }
 
         // Update user with company
         const { data: profile, error: updateError } = await supabase
-          .from('users')
+          .from("users")
           .update({
             company_id: company.id,
           })
-          .eq('id', authUser.id)
+          .eq("id", authUser.id)
           .select()
           .single();
 
