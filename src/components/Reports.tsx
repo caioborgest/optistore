@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   BarChart,
   Bar,
   XAxis,
@@ -15,10 +14,10 @@ import {
   Line,
   PieChart,
   Pie,
-  Cell
-} from 'recharts';
-import { 
-  Download, 
+  Cell,
+} from "recharts";
+import {
+  Download,
   Filter,
   Calendar,
   TrendingUp,
@@ -26,14 +25,14 @@ import {
   CheckCircle,
   AlertTriangle,
   FileText,
-  Loader2
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+  Loader2,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const Reports = () => {
-  const [period, setPeriod] = useState('month');
+  const [period, setPeriod] = useState("month");
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState({
     totalTasks: 0,
@@ -41,11 +40,20 @@ const Reports = () => {
     overdueTasks: 0,
     totalUsers: 0,
     completionRate: 0,
-    performanceData: [] as Array<{ name: string; completed: number; pending: number; sector: string }>,
-    sectorData: [] as Array<{ name: string; tasks: number; completed: number; efficiency: number }>,
-    taskTypeData: [] as Array<{ name: string; value: number; color: string }>
+    performanceData: [] as Array<{
+      name: string;
+      completed: number;
+      pending: number;
+    }>,
+    sectorData: [] as Array<{
+      name: string;
+      tasks: number;
+      completed: number;
+      efficiency: number;
+    }>,
+    taskTypeData: [] as Array<{ name: string; value: number; color: string }>,
   });
-  
+
   const { userProfile } = useAuth();
   const { toast } = useToast();
 
@@ -64,15 +72,15 @@ const Reports = () => {
       // Calcular período baseado na seleção
       const now = new Date();
       let startDate: Date;
-      
+
       switch (period) {
-        case 'week':
+        case "week":
           startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           break;
-        case 'quarter':
+        case "quarter":
           startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
           break;
-        case 'year':
+        case "year":
           startDate = new Date(now.getFullYear(), 0, 1);
           break;
         default: // month
@@ -81,90 +89,115 @@ const Reports = () => {
 
       // Buscar tarefas do período
       let tasksQuery = supabase
-        .from('tasks')
-        .select(`
+        .from("tasks")
+        .select(
+          `
           *,
-          assigned_user:users!assigned_to(name, sector)
-        `)
-        .gte('created_at', startDate.toISOString());
+          assigned_user:users!assigned_to(name)
+        `
+        )
+        .gte("created_at", startDate.toISOString());
 
       // Filtrar por empresa se não for admin
       if (!userProfile.is_company_admin) {
-        tasksQuery = tasksQuery.eq('assigned_to', userProfile.id);
+        tasksQuery = tasksQuery.eq("assigned_to", userProfile.id);
       }
 
       const { data: tasks, error: tasksError } = await tasksQuery;
 
       if (tasksError) {
-        console.error('Erro ao carregar tarefas:', tasksError);
+        console.error("Erro ao carregar tarefas:", tasksError);
         return;
       }
 
       // Calcular estatísticas básicas
       const totalTasks = tasks?.length || 0;
-      const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
-      const overdueTasks = tasks?.filter(t => t.status === 'overdue').length || 0;
-      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const completedTasks =
+        tasks?.filter((t) => t.status === "completed").length || 0;
+      const overdueTasks =
+        tasks?.filter((t) => t.status === "overdue").length || 0;
+      const completionRate =
+        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
       // Performance por usuário (apenas para admin)
-      const performanceData: Array<{ name: string; completed: number; pending: number; sector: string }> = [];
+      const performanceData: Array<{
+        name: string;
+        completed: number;
+        pending: number;
+      }> = [];
       if (userProfile.is_company_admin && tasks) {
         const userStats = tasks.reduce((acc, task) => {
-          const userName = task.assigned_user?.name || 'Usuário Desconhecido';
-          const userSector = task.assigned_user?.sector || 'Geral';
-          
+          const userName = task.assigned_user?.name || "Usuário Desconhecido";
+
           if (!acc[userName]) {
-            acc[userName] = { name: userName, completed: 0, pending: 0, sector: userSector };
+            acc[userName] = { name: userName, completed: 0, pending: 0 };
           }
-          
-          if (task.status === 'completed') {
+
+          if (task.status === "completed") {
             acc[userName].completed++;
-          } else if (task.status === 'pending') {
+          } else if (task.status === "pending") {
             acc[userName].pending++;
           }
-          
+
           return acc;
-        }, {} as Record<string, { name: string; completed: number; pending: number; sector: string }>);
+        }, {} as Record<string, { name: string; completed: number; pending: number }>);
 
         performanceData.push(...Object.values(userStats).slice(0, 5));
       }
 
-      // Performance por setor
-      const sectorStats = tasks?.reduce((acc, task) => {
-        const sector = task.sector || 'Geral';
-        
-        if (!acc[sector]) {
-          acc[sector] = { name: sector, tasks: 0, completed: 0, efficiency: 0 };
-        }
-        
-        acc[sector].tasks++;
-        if (task.status === 'completed') {
-          acc[sector].completed++;
-        }
-        
-        return acc;
-      }, {} as Record<string, { name: string; tasks: number; completed: number; efficiency: number }>) || {};
+      // Performance por setor (usando o setor da tarefa)
+      const sectorStats =
+        tasks?.reduce((acc, task) => {
+          const sector = task.sector || "Geral";
 
-      const sectorData = Object.values(sectorStats).map(sector => ({
+          if (!acc[sector]) {
+            acc[sector] = {
+              name: sector,
+              tasks: 0,
+              completed: 0,
+              efficiency: 0,
+            };
+          }
+
+          acc[sector].tasks++;
+          if (task.status === "completed") {
+            acc[sector].completed++;
+          }
+
+          return acc;
+        }, {} as Record<string, { name: string; tasks: number; completed: number; efficiency: number }>) ||
+        {};
+
+      const sectorData = Object.values(sectorStats).map((sector) => ({
         ...sector,
-        efficiency: sector.tasks > 0 ? Math.round((sector.completed / sector.tasks) * 100) : 0
+        efficiency:
+          sector.tasks > 0
+            ? Math.round((sector.completed / sector.tasks) * 100)
+            : 0,
       }));
 
       // Distribuição por setor para gráfico de pizza
-      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
+      const colors = [
+        "#3B82F6",
+        "#10B981",
+        "#F59E0B",
+        "#EF4444",
+        "#8B5CF6",
+        "#F97316",
+      ];
       const taskTypeData = sectorData.map((sector, index) => ({
         name: sector.name,
         value: sector.tasks,
-        color: colors[index % colors.length]
+        color: colors[index % colors.length],
       }));
 
       // Buscar total de usuários (apenas para admin)
       let totalUsers = 0;
       if (userProfile.is_company_admin) {
         const { count } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', userProfile.company_id);
+          .from("users")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", userProfile.company_id);
         totalUsers = count || 0;
       }
 
@@ -176,15 +209,14 @@ const Reports = () => {
         completionRate,
         performanceData,
         sectorData,
-        taskTypeData
+        taskTypeData,
       });
-
     } catch (error) {
-      console.error('Erro ao carregar relatórios:', error);
+      console.error("Erro ao carregar relatórios:", error);
       toast({
-        title: 'Erro ao carregar relatórios',
-        description: 'Não foi possível carregar os dados dos relatórios',
-        variant: 'destructive'
+        title: "Erro ao carregar relatórios",
+        description: "Não foi possível carregar os dados dos relatórios",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -196,7 +228,9 @@ const Reports = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Relatórios e Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Relatórios e Analytics
+          </h1>
           <p className="text-gray-600 mt-1">
             Acompanhe o desempenho e produtividade da equipe
           </p>
@@ -222,16 +256,20 @@ const Reports = () => {
               <span className="text-sm font-medium">Período:</span>
             </div>
             <div className="flex gap-1">
-              {['week', 'month', 'quarter', 'year'].map((p) => (
+              {["week", "month", "quarter", "year"].map((p) => (
                 <Button
                   key={p}
-                  variant={period === p ? 'default' : 'outline'}
+                  variant={period === p ? "default" : "outline"}
                   size="sm"
                   onClick={() => setPeriod(p)}
                 >
-                  {p === 'week' ? 'Semana' :
-                   p === 'month' ? 'Mês' :
-                   p === 'quarter' ? 'Trimestre' : 'Ano'}
+                  {p === "week"
+                    ? "Semana"
+                    : p === "month"
+                    ? "Mês"
+                    : p === "quarter"
+                    ? "Trimestre"
+                    : "Ano"}
                 </Button>
               ))}
             </div>
@@ -245,9 +283,15 @@ const Reports = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Tarefas</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total de Tarefas
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : reportData.totalTasks}
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    reportData.totalTasks
+                  )}
                 </p>
                 <p className="text-sm text-gray-600 flex items-center mt-1">
                   <FileText className="h-3 w-3 mr-1" />
@@ -263,15 +307,27 @@ const Reports = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Taxa de Conclusão</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : `${reportData.completionRate}%`}
+                <p className="text-sm font-medium text-gray-600">
+                  Taxa de Conclusão
                 </p>
-                <p className={`text-sm flex items-center mt-1 ${
-                  reportData.completionRate >= 75 ? 'text-green-600' : 'text-yellow-600'
-                }`}>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    `${reportData.completionRate}%`
+                  )}
+                </p>
+                <p
+                  className={`text-sm flex items-center mt-1 ${
+                    reportData.completionRate >= 75
+                      ? "text-green-600"
+                      : "text-yellow-600"
+                  }`}
+                >
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  {reportData.completionRate >= 75 ? 'Acima da meta' : 'Abaixo da meta'}
+                  {reportData.completionRate >= 75
+                    ? "Acima da meta"
+                    : "Abaixo da meta"}
                 </p>
               </div>
               <CheckCircle className="h-12 w-12 text-green-600" />
@@ -283,15 +339,27 @@ const Reports = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Tarefas Atrasadas</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : reportData.overdueTasks}
+                <p className="text-sm font-medium text-gray-600">
+                  Tarefas Atrasadas
                 </p>
-                <p className={`text-sm flex items-center mt-1 ${
-                  reportData.overdueTasks === 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    reportData.overdueTasks
+                  )}
+                </p>
+                <p
+                  className={`text-sm flex items-center mt-1 ${
+                    reportData.overdueTasks === 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
                   <AlertTriangle className="h-3 w-3 mr-1" />
-                  {reportData.overdueTasks === 0 ? 'Nenhuma atrasada' : 'Requer atenção'}
+                  {reportData.overdueTasks === 0
+                    ? "Nenhuma atrasada"
+                    : "Requer atenção"}
                 </p>
               </div>
               <AlertTriangle className="h-12 w-12 text-red-600" />
@@ -304,18 +372,24 @@ const Reports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  {userProfile?.is_company_admin ? 'Colaboradores Ativos' : 'Tarefas Concluídas'}
+                  {userProfile?.is_company_admin
+                    ? "Colaboradores Ativos"
+                    : "Tarefas Concluídas"}
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {loading ? (
                     <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : userProfile?.is_company_admin ? (
+                    reportData.totalUsers
                   ) : (
-                    userProfile?.is_company_admin ? reportData.totalUsers : reportData.completedTasks
+                    reportData.completedTasks
                   )}
                 </p>
                 <p className="text-sm text-blue-600 flex items-center mt-1">
                   <Users className="h-3 w-3 mr-1" />
-                  {userProfile?.is_company_admin ? 'Total da empresa' : 'Suas conquistas'}
+                  {userProfile?.is_company_admin
+                    ? "Total da empresa"
+                    : "Suas conquistas"}
                 </p>
               </div>
               <Users className="h-12 w-12 text-purple-600" />
@@ -375,7 +449,9 @@ const Reports = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
@@ -413,8 +489,14 @@ const Reports = () => {
                 {reportData.sectorData.map((sector) => (
                   <div key={sector.name} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">{sector.name}</h3>
-                      <Badge variant={sector.efficiency >= 90 ? 'default' : 'secondary'}>
+                      <h3 className="font-semibold text-gray-900">
+                        {sector.name}
+                      </h3>
+                      <Badge
+                        variant={
+                          sector.efficiency >= 90 ? "default" : "secondary"
+                        }
+                      >
                         {sector.efficiency}% eficiência
                       </Badge>
                     </div>
@@ -425,17 +507,21 @@ const Reports = () => {
                       </div>
                       <div>
                         <p className="text-gray-600">Concluídas</p>
-                        <p className="font-semibold text-green-600">{sector.completed}</p>
+                        <p className="font-semibold text-green-600">
+                          {sector.completed}
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-600">Pendentes</p>
-                        <p className="font-semibold text-yellow-600">{sector.tasks - sector.completed}</p>
+                        <p className="font-semibold text-yellow-600">
+                          {sector.tasks - sector.completed}
+                        </p>
                       </div>
                     </div>
                     <div className="mt-3">
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full"
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300 progress-bar"
                           style={{ width: `${sector.efficiency}%` }}
                         />
                       </div>
@@ -454,8 +540,6 @@ const Reports = () => {
           </CardContent>
         </Card>
       </div>
-
-
     </div>
   );
 };

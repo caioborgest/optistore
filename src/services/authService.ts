@@ -27,10 +27,7 @@ export const AuthService = {
       // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('users')
-        .select(`
-          *,
-          companies (*)
-        `)
+        .select('*')
         .eq('id', data.user.id)
         .single();
 
@@ -38,9 +35,23 @@ export const AuthService = {
         return { error: 'Erro ao carregar perfil do usuário' };
       }
 
+      // Get company if user has one
+      let company = null;
+      if (profile.company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', profile.company_id)
+          .single();
+        
+        if (!companyError) {
+          company = companyData;
+        }
+      }
+
       return { 
         user: profile,
-        company: profile.companies 
+        company 
       };
     } catch (error: any) {
       return { error: error.message };
@@ -119,10 +130,7 @@ export const AuthService = {
 
       const { data: profile, error: profileError } = await supabase
         .from('users')
-        .select(`
-          *,
-          companies (*)
-        `)
+        .select('*')
         .eq('id', user.id)
         .single();
 
@@ -130,9 +138,23 @@ export const AuthService = {
         return { error: 'Erro ao carregar perfil do usuário' };
       }
 
+      // Get company if user has one
+      let company = null;
+      if (profile.company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', profile.company_id)
+          .single();
+        
+        if (!companyError) {
+          company = companyData;
+        }
+      }
+
       return { 
         user: profile,
-        company: profile.companies 
+        company 
       };
     } catch (error: any) {
       return { error: error.message };
@@ -207,15 +229,9 @@ export const AuthService = {
     }
   },
 
-  async registerWithInvite(inviteCode: string): Promise<AuthResponse> {
+  async registerWithInvite(inviteCode: string, userData?: { name: string; email: string; password: string }): Promise<AuthResponse> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        return { error: 'Usuário não autenticado' };
-      }
-
-      // Find company by invite code
+      // Find company by invite code first
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('*')
@@ -226,19 +242,74 @@ export const AuthService = {
         return { error: 'Código de convite inválido' };
       }
 
-      // Update user with company
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          company_id: company.id,
-        })
-        .eq('id', user.id);
+      let user: any;
 
-      if (updateError) {
-        return { error: updateError.message };
+      if (userData) {
+        // Create new user account
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: userData.email,
+          password: userData.password,
+          options: {
+            data: {
+              name: userData.name,
+            },
+          },
+        });
+
+        if (signUpError) {
+          return { error: signUpError.message };
+        }
+
+        if (!authData.user) {
+          return { error: 'Falha no cadastro' };
+        }
+
+        // Create user profile with company
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: authData.user.id,
+              name: userData.name,
+              email: userData.email,
+              company_id: company.id,
+              is_company_admin: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (profileError) {
+          return { error: 'Erro ao criar perfil do usuário' };
+        }
+
+        user = profile;
+      } else {
+        // Update existing authenticated user
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !authUser) {
+          return { error: 'Usuário não autenticado' };
+        }
+
+        // Update user with company
+        const { data: profile, error: updateError } = await supabase
+          .from('users')
+          .update({
+            company_id: company.id,
+          })
+          .eq('id', authUser.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          return { error: updateError.message };
+        }
+
+        user = profile;
       }
 
-      return { company };
+      return { user, company };
     } catch (error: any) {
       return { error: error.message };
     }

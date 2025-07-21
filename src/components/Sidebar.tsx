@@ -95,89 +95,89 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
 
   const SidebarContent = () => (
     <>
-      {/* Header */}
-      <div className="p-4 lg:p-6 border-b border-sidebar-border bg-gradient-to-r from-primary to-primary/90">
+      {/* Header with Logo */}
+      <div className="p-4 lg:p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <img 
-                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
-                alt="OptiFlow" 
-                className="h-6 w-6 lg:h-8 lg:w-8"
-              />
+            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+              <span className="text-white font-bold text-lg">O</span>
             </div>
             <div>
-              <h1 className="text-lg lg:text-xl font-bold text-white">OptiFlow</h1>
-              <p className="text-xs lg:text-sm text-white/80">Sistema de Gestão</p>
+              <h1 className="text-xl font-bold text-gray-900">
+                <span className="text-green-500">Opti</span>
+                <span className="text-gray-800">Flow</span>
+              </h1>
+              <p className="text-xs text-gray-500">Sistema de Gestão</p>
             </div>
           </div>
-          <div className="text-white">
+          <div className="text-gray-600">
             <NotificationCenter />
           </div>
         </div>
       </div>
 
-      {/* User Info */}
-      <div className="p-4 lg:p-6 border-b border-sidebar-border bg-sidebar-accent/30">
-        <div className="flex items-center space-x-3 lg:space-x-4">
-          <Avatar className="h-10 w-10 lg:h-12 lg:w-12 ring-2 ring-primary/20">
-            <AvatarImage src={userProfile.avatar_url} />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {userProfile.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sidebar-foreground truncate text-sm lg:text-base">
-              {userProfile.name}
-            </p>
-            <p className="text-xs lg:text-sm text-sidebar-foreground/70 truncate">
-              {userProfile.email}
-            </p>
-            <Badge className={`text-xs mt-1 lg:mt-2 border ${getRoleColor(userProfile.is_company_admin)}`} variant="outline">
-              <span className="flex items-center gap-1.5">
-                {getRoleIcon(userProfile.is_company_admin)}
-                {getRoleLabel(userProfile.is_company_admin)}
-              </span>
-            </Badge>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation */}
-      <nav className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             onClick={() => isMobile && setIsOpen(false)}
             className={({ isActive }) =>
-              `flex items-center space-x-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl transition-all duration-200 group ${
+              `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                 isActive
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <item.icon className={`h-4 w-4 lg:h-5 lg:w-5 ${isActive ? 'text-white' : 'text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground'}`} />
-                <span className="font-medium text-sm lg:text-base">{item.label}</span>
+                <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <span className="font-medium">{item.label}</span>
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-3 lg:p-4 border-t border-sidebar-border bg-sidebar-accent/20">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-sidebar-foreground/80 hover:text-red-600 hover:bg-red-50 transition-colors text-sm lg:text-base"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4 lg:h-5 lg:w-5 mr-3" />
-          Sair
-        </Button>
+      {/* User Profile Footer */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center space-x-3 mb-3">
+          <Avatar className="h-10 w-10 ring-2 ring-gray-200">
+            <AvatarImage src={userProfile.avatar_url} />
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+              {userProfile.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 truncate text-sm">
+              {userProfile.name}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {userProfile.email}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <Badge className={`text-xs border ${getRoleColor(userProfile.is_company_admin)}`} variant="outline">
+            <span className="flex items-center gap-1.5">
+              {getRoleIcon(userProfile.is_company_admin)}
+              {getRoleLabel(userProfile.is_company_admin)}
+            </span>
+          </Badge>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors p-2"
+            onClick={logout}
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </>
   );
@@ -195,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
         )}
         {/* Mobile Sidebar */}
         <div className={cn(
-          "fixed left-0 top-0 h-full w-80 bg-sidebar shadow-xl border-r border-sidebar-border flex flex-col z-50 lg:hidden transition-transform duration-300",
+          "fixed left-0 top-0 h-full w-80 bg-white shadow-xl border-r border-gray-200 flex flex-col z-50 lg:hidden transition-transform duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}>
           <SidebarContent />
@@ -205,7 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   }
 
   return (
-    <div className="w-72 bg-sidebar shadow-xl border-r border-sidebar-border flex flex-col">
+    <div className="w-72 bg-white shadow-xl border-r border-gray-200 flex flex-col">
       <SidebarContent />
     </div>
   );

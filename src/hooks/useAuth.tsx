@@ -15,7 +15,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   registerCompany: (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<{ error?: string }>;
-  registerWithInvite: (inviteCode: string) => Promise<{ error?: string }>;
+  registerWithInvite: (inviteCode: string, userData?: { name: string; email: string; password: string }) => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,11 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(user || null);
       setCompany(company || null);
-      
-      toast({
-        title: 'Login realizado com sucesso',
-        description: 'Bem-vindo ao OptiFlow!'
-      });
 
       return {};
     } catch (error: any) {
@@ -169,14 +164,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const registerWithInvite = async (inviteCode: string) => {
+  const registerWithInvite = async (inviteCode: string, userData?: { name: string; email: string; password: string }) => {
     try {
-      const { company, error } = await AuthService.registerWithInvite(inviteCode);
+      const { user, company, error } = await AuthService.registerWithInvite(inviteCode, userData);
       
       if (error) {
         return { error };
       }
 
+      setUser(user || null);
       setCompany(company || null);
       
       toast({

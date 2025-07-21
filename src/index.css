@@ -169,4 +169,9 @@ All colors MUST be HSL.
   .gradient-secondary {
     background: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--muted)));
   }
+
+  /* Progress bar styles */
+  .progress-bar {
+    width: calc(var(--progress, 0) * 1%);
+  }
 }

@@ -18,7 +18,7 @@ import {
   Target,
   Bell,
   MessageSquare,
-  Award
+  Award,
 } from "lucide-react";
 import { UserProfile } from "@/types/database";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,13 +40,17 @@ interface DashboardStats {
     title: string;
     description: string;
     timestamp: string;
-    type: 'task_created' | 'task_completed' | 'user_joined' | 'meeting_scheduled';
+    type:
+      | "task_created"
+      | "task_completed"
+      | "user_joined"
+      | "meeting_scheduled";
   }>;
   upcomingTasks: Array<{
     id: string;
     title: string;
     due_date: string;
-    priority: 'low' | 'medium' | 'high' | 'urgent';
+    priority: "low" | "medium" | "high" | "urgent";
   }>;
 }
 
@@ -67,65 +71,103 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
   const loadDashboardStats = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar estatísticas de tarefas baseadas no papel do usuário
-      let tasksQuery = supabase.from('tasks').select('*');
-      
-      // Filtrar baseado no papel do usuário
+      let tasks;
+      let tasksError;
+
       if (!userProfile.is_company_admin) {
-        tasksQuery = tasksQuery.eq('assigned_to', userProfile.id);
+        // Usuário comum vê apenas suas tarefas
+        const result = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("assigned_to", userProfile.id);
+        tasks = result.data;
+        tasksError = result.error;
       } else {
         // Admin vê todas as tarefas da empresa
-        tasksQuery = tasksQuery.in('assigned_to', 
-          supabase.from('users').select('id').eq('company_id', userProfile.company_id)
-        );
+        // Primeiro buscar todos os usuários da empresa
+        const { data: companyUsers, error: usersError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("company_id", userProfile.company_id);
+
+        if (usersError) {
+          console.error("Erro ao carregar usuários:", usersError);
+          return;
+        }
+
+        // Extrair apenas os IDs dos usuários
+        const userIds = companyUsers?.map(user => user.id) || [];
+
+        // Buscar tarefas de todos os usuários da empresa
+        if (userIds.length > 0) {
+          const result = await supabase
+            .from("tasks")
+            .select("*")
+            .in("assigned_to", userIds);
+          tasks = result.data;
+          tasksError = result.error;
+        } else {
+          tasks = [];
+          tasksError = null;
+        }
       }
 
-      const { data: tasks, error: tasksError } = await tasksQuery;
-      
       if (tasksError) {
-        console.error('Erro ao carregar tarefas:', tasksError);
+        console.error("Erro ao carregar tarefas:", tasksError);
         return;
       }
 
       // Calcular estatísticas
       const totalTasks = tasks?.length || 0;
-      const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
-      const pendingTasks = tasks?.filter(t => t.status === 'pending').length || 0;
-      const overdueTasks = tasks?.filter(t => t.status === 'overdue').length || 0;
+      const completedTasks =
+        tasks?.filter((t) => t.status === "completed").length || 0;
+      const pendingTasks =
+        tasks?.filter((t) => t.status === "pending").length || 0;
+      const overdueTasks =
+        tasks?.filter((t) => t.status === "overdue").length || 0;
 
       // Buscar tarefas próximas do vencimento
       const { data: upcomingTasks } = await supabase
-        .from('tasks')
-        .select('id, title, due_date, priority')
-        .gte('due_date', new Date().toISOString())
-        .lte('due_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())
-        .eq('status', 'pending')
-        .order('due_date', { ascending: true })
+        .from("tasks")
+        .select("id, title, due_date, priority")
+        .gte("due_date", new Date().toISOString())
+        .lte(
+          "due_date",
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        )
+        .eq("status", "pending")
+        .order("due_date", { ascending: true })
         .limit(5);
 
       // Buscar atividades recentes (últimas tarefas criadas/atualizadas)
       const { data: recentTasks } = await supabase
-        .from('tasks')
-        .select('id, title, created_at, status, updated_at')
-        .order('updated_at', { ascending: false })
+        .from("tasks")
+        .select("id, title, created_at, status, updated_at")
+        .order("updated_at", { ascending: false })
         .limit(5);
 
-      const recentActivities = recentTasks?.map(task => ({
-        id: task.id,
-        title: task.status === 'completed' ? 'Tarefa concluída' : 'Tarefa criada',
-        description: task.title,
-        timestamp: task.updated_at || task.created_at,
-        type: task.status === 'completed' ? 'task_completed' as const : 'task_created' as const
-      })) || [];
+      const recentActivities =
+        recentTasks?.map((task) => ({
+          id: task.id,
+          title:
+            task.status === "completed" ? "Tarefa concluída" : "Tarefa criada",
+          description: task.title,
+          timestamp: task.updated_at || task.created_at,
+          type:
+            task.status === "completed"
+              ? ("task_completed" as const)
+              : ("task_created" as const),
+        })) || [];
 
       // Buscar total de usuários (apenas para admin)
       let totalUsers = 0;
       if (userProfile.is_company_admin) {
         const { count } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', userProfile.company_id);
+          .from("users")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", userProfile.company_id);
         totalUsers = count || 0;
       }
 
@@ -136,15 +178,14 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
         overdueTasks,
         totalUsers,
         recentActivities,
-        upcomingTasks: upcomingTasks || []
+        upcomingTasks: upcomingTasks || [],
       });
-
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      console.error("Erro ao carregar estatísticas:", error);
       toast({
-        title: 'Erro ao carregar dados',
-        description: 'Não foi possível carregar as estatísticas do dashboard',
-        variant: 'destructive'
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar as estatísticas do dashboard",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -184,7 +225,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
     if (!stats) {
       return {
         title: "Carregando...",
-        cards: []
+        cards: [],
       };
     }
 
@@ -212,7 +253,12 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           },
           {
             title: "Taxa de Conclusão",
-            value: stats.totalTasks > 0 ? `${Math.round((stats.completedTasks / stats.totalTasks) * 100)}%` : "0%",
+            value:
+              stats.totalTasks > 0
+                ? `${Math.round(
+                    (stats.completedTasks / stats.totalTasks) * 100
+                  )}%`
+                : "0%",
             icon: TrendingUp,
             color: "text-orange-600",
           },
@@ -314,23 +360,28 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
             ) : stats?.recentActivities.length ? (
               <div className="space-y-3 lg:space-y-4">
                 {stats.recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm lg:text-base truncate">
                         {activity.title}: "{activity.description}"
                       </p>
                       <p className="text-xs lg:text-sm text-gray-600">
-                        {new Date(activity.timestamp).toLocaleString('pt-BR')}
+                        {new Date(activity.timestamp).toLocaleString("pt-BR")}
                       </p>
                     </div>
-                    <Badge 
+                    <Badge
                       className={`ml-2 text-xs ${
-                        activity.type === 'task_completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-blue-100 text-blue-800'
+                        activity.type === "task_completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
                       }`}
                     >
-                      {activity.type === 'task_completed' ? 'Concluída' : 'Nova'}
+                      {activity.type === "task_completed"
+                        ? "Concluída"
+                        : "Nova"}
                     </Badge>
                   </div>
                 ))}
@@ -362,27 +413,40 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
             ) : stats?.upcomingTasks.length ? (
               <div className="space-y-3 lg:space-y-4">
                 {stats.upcomingTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm lg:text-base truncate">
                         {task.title}
                       </p>
                       <p className="text-xs lg:text-sm text-gray-600">
-                        Vence em {Math.ceil((new Date(task.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} dias
+                        Vence em{" "}
+                        {Math.ceil(
+                          (new Date(task.due_date).getTime() -
+                            new Date().getTime()) /
+                            (1000 * 60 * 60 * 24)
+                        )}{" "}
+                        dias
                       </p>
                     </div>
-                    <Badge 
+                    <Badge
                       className={`ml-2 text-xs ${
-                        task.priority === 'urgent' || task.priority === 'high'
-                          ? 'bg-red-100 text-red-800'
-                          : task.priority === 'medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
+                        task.priority === "urgent" || task.priority === "high"
+                          ? "bg-red-100 text-red-800"
+                          : task.priority === "medium"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
                       }`}
                     >
-                      {task.priority === 'urgent' ? 'Urgente' :
-                       task.priority === 'high' ? 'Alta' :
-                       task.priority === 'medium' ? 'Média' : 'Baixa'}
+                      {task.priority === "urgent"
+                        ? "Urgente"
+                        : task.priority === "high"
+                        ? "Alta"
+                        : task.priority === "medium"
+                        ? "Média"
+                        : "Baixa"}
                     </Badge>
                   </div>
                 ))}
