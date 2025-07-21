@@ -22,7 +22,6 @@ export interface UserProfile {
   updated_at: string;
   company_id?: string;
   role: 'admin' | 'manager' | 'employee';
-  sector?: string;
   is_active: boolean;
   is_company_admin: boolean;
   phone?: string;
@@ -96,5 +95,16 @@ export interface Notification {
   is_read: boolean;
   read_at?: string;
   expires_at?: string;
+  created_at: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: string;
   created_at: string;
 }

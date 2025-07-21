@@ -35,7 +35,8 @@ const TaskManager = () => {
     sector: '',
     assigned_to: '',
     due_date: '',
-    estimated_hours: 0
+    estimated_hours: 0,
+    status: 'pending' as const,
   });
 
   const { userProfile } = useAuth();
@@ -81,7 +82,6 @@ const TaskManager = () => {
 
       const { data, error } = await TaskService.createTask({
         ...newTask,
-        status: 'pending',
         sector: newTask.sector || userProfile?.sector || 'Geral'
       });
 
@@ -103,7 +103,8 @@ const TaskManager = () => {
         sector: '',
         assigned_to: '',
         due_date: '',
-        estimated_hours: 0
+        estimated_hours: 0,
+        status: 'pending',
       });
       setIsCreateDialogOpen(false);
 

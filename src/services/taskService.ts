@@ -2,96 +2,119 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/database';
 
-export class TaskService {
-  /**
-   * Buscar todas as tarefas
-   */
-  static async getTasks(): Promise<{ data: Task[] | null; error: any }> {
+export const TaskService = {
+  async getTasks(): Promise<{ data?: Task[]; error?: { message: string } }> {
     try {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
           *,
-          assigned_user:users!tasks_assigned_to_fkey(name, email),
-          created_user:users!tasks_created_by_fkey(name, email)
+          created_user:users!tasks_created_by_fkey(name, email, avatar_url),
+          assigned_user:users!tasks_assigned_to_fkey(name, email, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao buscar tarefas:', error);
-      return { data: null, error };
-    }
-  }
+      if (error) {
+        return { error: { message: error.message } };
+      }
 
-  /**
-   * Criar nova tarefa
-   */
-  static async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<{ data: Task | null; error: any }> {
+      // Map database types to our Task interface
+      const tasks: Task[] = data?.map(task => ({
+        ...task,
+        status: task.status as Task['status'],
+        priority: task.priority as Task['priority'],
+      })) || [];
+
+      return { data: tasks };
+    } catch (error: any) {
+      return { error: { message: error.message } };
+    }
+  },
+
+  async createTask(taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<{ data?: Task; error?: { message: string } }> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return { data: null, error: { message: 'Usuário não autenticado' } };
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return { error: { message: 'Usuário não autenticado' } };
       }
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          ...task,
+        .insert([{
+          ...taskData,
           created_by: user.id,
-          status: task.status || 'pending'
-        })
+        }])
         .select()
         .single();
 
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao criar tarefa:', error);
-      return { data: null, error };
-    }
-  }
+      if (error) {
+        return { error: { message: error.message } };
+      }
 
-  /**
-   * Atualizar tarefa
-   */
-  static async updateTask(id: string, updates: Partial<Task>): Promise<{ data: Task | null; error: any }> {
+      return { data: data as Task };
+    } catch (error: any) {
+      return { error: { message: error.message } };
+    }
+  },
+
+  async updateTask(taskId: string, updates: Partial<Task>): Promise<{ data?: Task; error?: { message: string } }> {
     try {
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
-        .eq('id', id)
+        .eq('id', taskId)
         .select()
         .single();
 
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao atualizar tarefa:', error);
-      return { data: null, error };
-    }
-  }
+      if (error) {
+        return { error: { message: error.message } };
+      }
 
-  /**
-   * Deletar tarefa
-   */
-  static async deleteTask(id: string): Promise<{ error: any }> {
+      return { data: data as Task };
+    } catch (error: any) {
+      return { error: { message: error.message } };
+    }
+  },
+
+  async deleteTask(taskId: string): Promise<{ error?: { message: string } }> {
     try {
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', id);
+        .eq('id', taskId);
 
-      return { error };
-    } catch (error) {
-      console.error('Erro ao deletar tarefa:', error);
-      return { error };
+      if (error) {
+        return { error: { message: error.message } };
+      }
+
+      return {};
+    } catch (error: any) {
+      return { error: { message: error.message } };
     }
-  }
+  },
 
-  /**
-   * Buscar tarefas do usuário
-   */
-  static async getUserTasks(userId: string): Promise<{ data: Task[] | null; error: any }> {
+  async completeTask(taskId: string): Promise<{ error?: { message: string } }> {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        return { error: { message: error.message } };
+      }
+
+      return {};
+    } catch (error: any) {
+      return { error: { message: error.message } };
+    }
+  },
+
+  async getTasksByUser(userId: string): Promise<{ data?: Task[]; error?: { message: string } }> {
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -99,17 +122,17 @@ export class TaskService {
         .eq('assigned_to', userId)
         .order('created_at', { ascending: false });
 
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao buscar tarefas do usuário:', error);
-      return { data: null, error };
-    }
-  }
+      if (error) {
+        return { error: { message: error.message } };
+      }
 
-  /**
-   * Buscar tarefas por setor
-   */
-  static async getTasksBySector(sector: string): Promise<{ data: Task[] | null; error: any }> {
+      return { data: data as Task[] };
+    } catch (error: any) {
+      return { error: { message: error.message } };
+    }
+  },
+
+  async getTasksBySector(sector: string): Promise<{ data?: Task[]; error?: { message: string } }> {
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -117,32 +140,13 @@ export class TaskService {
         .eq('sector', sector)
         .order('created_at', { ascending: false });
 
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao buscar tarefas por setor:', error);
-      return { data: null, error };
-    }
-  }
+      if (error) {
+        return { error: { message: error.message } };
+      }
 
-  /**
-   * Marcar tarefa como concluída
-   */
-  static async completeTask(id: string): Promise<{ data: Task | null; error: any }> {
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      return { data, error };
-    } catch (error) {
-      console.error('Erro ao completar tarefa:', error);
-      return { data: null, error };
+      return { data: data as Task[] };
+    } catch (error: any) {
+      return { error: { message: error.message } };
     }
-  }
-}
+  },
+};

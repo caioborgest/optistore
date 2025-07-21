@@ -1,231 +1,252 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { UserProfile, Company } from '@/types/database';
+import { UserProfile, Company } from '@/types/database';
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
+interface AuthResponse {
+  user?: any;
+  company?: Company;
+  error?: string;
 }
 
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  role?: 'admin' | 'manager' | 'employee';
-  sector?: string;
-  companyId?: string;
-}
-
-export class AuthService {
-  /**
-   * Fazer login do usuário
-   */
-  static async signIn(email: string, password: string): Promise<{ user: any; userProfile: UserProfile | null; company: Company | null; error: any }> {
+export const AuthService = {
+  async signIn(email: string, password: string): Promise<AuthResponse> {
     try {
-      console.log('🔑 Tentando fazer login com:', email);
-      
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
-      if (authError) {
-        console.log('❌ Erro de autenticação:', authError);
-        return { user: null, userProfile: null, company: null, error: authError };
+      if (error) {
+        return { error: error.message };
       }
 
-      if (!authData.user) {
-        return { user: null, userProfile: null, company: null, error: { message: 'Usuário não encontrado' } };
+      if (!data.user) {
+        return { error: 'Falha na autenticação' };
       }
 
-      // Buscar perfil do usuário
-      const { data: userProfile, error: profileError } = await supabase
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
         .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
+        .select(`
+          *,
+          companies (*)
+        `)
+        .eq('id', data.user.id)
         .single();
 
       if (profileError) {
-        console.log('❌ Erro ao buscar perfil:', profileError);
-        return { user: authData.user, userProfile: null, company: null, error: profileError };
+        return { error: 'Erro ao carregar perfil do usuário' };
       }
 
-      // Buscar empresa do usuário
-      let company = null;
-      if (userProfile?.company_id) {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', userProfile.company_id)
-          .single();
-
-        if (!companyError) {
-          company = companyData;
-        }
-      }
-
-      // Atualizar último login
-      await supabase
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', authData.user.id);
-
-      console.log('✅ Login realizado com sucesso');
-      return { user: authData.user, userProfile, company, error: null };
-
-    } catch (error) {
-      console.error('💥 Erro geral no login:', error);
-      return { user: null, userProfile: null, company: null, error };
+      return { 
+        user: {
+          ...profile,
+          role: profile.role || 'employee',
+          is_active: profile.is_active || true,
+        }, 
+        company: profile.companies 
+      };
+    } catch (error: any) {
+      return { error: error.message };
     }
-  }
+  },
 
-  /**
-   * Registrar novo usuário
-   */
-  static async signUp(data: RegisterData): Promise<{ user: any; userProfile: UserProfile | null; company: Company | null; error: any }> {
+  async signUp(email: string, password: string, name: string): Promise<AuthResponse> {
     try {
-      console.log('📝 Registrando usuário:', data);
-      
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
           data: {
-            name: data.name
-          }
-        }
+            name,
+          },
+        },
       });
 
-      if (authError) {
-        console.log('❌ Erro ao registrar:', authError);
-        return { user: null, userProfile: null, company: null, error: authError };
+      if (error) {
+        return { error: error.message };
       }
 
-      if (!authData.user) {
-        return { user: null, userProfile: null, company: null, error: { message: 'Falha ao criar usuário' } };
+      if (!data.user) {
+        return { error: 'Falha no cadastro' };
       }
 
-      // Criar perfil do usuário
-      const { data: userProfile, error: profileError } = await supabase
+      // Create user profile
+      const { data: profile, error: profileError } = await supabase
         .from('users')
-        .insert({
-          id: authData.user.id,
-          name: data.name,
-          email: data.email,
-          role: data.role || 'employee',
-          sector: data.sector || 'Geral',
-          company_id: data.companyId,
-          is_active: true,
-          is_company_admin: data.role === 'admin'
-        })
+        .insert([
+          {
+            id: data.user.id,
+            name,
+            email,
+            role: 'employee',
+            is_active: true,
+            is_company_admin: false,
+          },
+        ])
         .select()
         .single();
 
       if (profileError) {
-        console.log('❌ Erro ao criar perfil:', profileError);
-        return { user: authData.user, userProfile: null, company: null, error: profileError };
+        return { error: 'Erro ao criar perfil do usuário' };
       }
 
-      // Buscar empresa se fornecida
-      let company = null;
-      if (data.companyId) {
-        const { data: companyData } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', data.companyId)
-          .single();
-
-        company = companyData;
-      }
-
-      console.log('✅ Usuário registrado com sucesso');
-      return { user: authData.user, userProfile, company, error: null };
-
-    } catch (error) {
-      console.error('💥 Erro geral no registro:', error);
-      return { user: null, userProfile: null, company: null, error };
+      return { user: profile };
+    } catch (error: any) {
+      return { error: error.message };
     }
-  }
+  },
 
-  /**
-   * Fazer logout
-   */
-  static async signOut(): Promise<{ error: any }> {
+  async signOut(): Promise<{ error?: string }> {
     try {
-      console.log('🚪 Fazendo logout');
       const { error } = await supabase.auth.signOut();
-      return { error };
-    } catch (error) {
-      console.error('💥 Erro no logout:', error);
-      return { error };
-    }
-  }
-
-  /**
-   * Obter usuário atual
-   */
-  static async getCurrentUser(): Promise<{ user: any; userProfile: UserProfile | null; company: Company | null; error: any }> {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
-        return { user: null, userProfile: null, company: null, error: authError };
+      if (error) {
+        return { error: error.message };
       }
 
-      // Buscar perfil do usuário
-      const { data: userProfile, error: profileError } = await supabase
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  },
+
+  async getCurrentUser(): Promise<{ user?: UserProfile; company?: Company; error?: string }> {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (!user) {
+        return { error: 'Usuário não autenticado' };
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          companies (*)
+        `)
         .eq('id', user.id)
         .single();
 
       if (profileError) {
-        return { user, userProfile: null, company: null, error: profileError };
+        return { error: 'Erro ao carregar perfil do usuário' };
       }
 
-      // Buscar empresa do usuário
-      let company = null;
-      if (userProfile?.company_id) {
-        const { data: companyData } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', userProfile.company_id)
-          .single();
-
-        company = companyData;
-      }
-
-      return { user, userProfile, company, error: null };
-
-    } catch (error) {
-      console.error('💥 Erro ao obter usuário atual:', error);
-      return { user: null, userProfile: null, company: null, error };
+      return { 
+        user: {
+          ...profile,
+          role: profile.role || 'employee',
+          is_active: profile.is_active || true,
+        }, 
+        company: profile.companies 
+      };
+    } catch (error: any) {
+      return { error: error.message };
     }
-  }
+  },
 
-  /**
-   * Atualizar perfil do usuário
-   */
-  static async updateProfile(updates: Partial<UserProfile>): Promise<{ userProfile: UserProfile | null; error: any }> {
+  async updateProfile(updates: Partial<UserProfile>): Promise<{ user?: UserProfile; error?: string }> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return { userProfile: null, error: { message: 'Usuário não autenticado' } };
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return { error: 'Usuário não autenticado' };
       }
 
-      const { data: userProfile, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('users')
         .update(updates)
         .eq('id', user.id)
         .select()
         .single();
 
-      return { userProfile, error };
+      if (error) {
+        return { error: error.message };
+      }
 
-    } catch (error) {
-      console.error('💥 Erro ao atualizar perfil:', error);
-      return { userProfile: null, error };
+      return { user: profile };
+    } catch (error: any) {
+      return { error: error.message };
     }
-  }
-}
+  },
+
+  async registerCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<AuthResponse> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return { error: 'Usuário não autenticado' };
+      }
+
+      const { data: company, error } = await supabase
+        .from('companies')
+        .insert([companyData])
+        .select()
+        .single();
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      // Update user to be company admin
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          company_id: company.id,
+          is_company_admin: true,
+          role: 'admin',
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        return { error: updateError.message };
+      }
+
+      return { company };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  },
+
+  async registerWithInvite(inviteCode: string): Promise<AuthResponse> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return { error: 'Usuário não autenticado' };
+      }
+
+      // Find company by invite code
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('invite_code', inviteCode)
+        .single();
+
+      if (companyError) {
+        return { error: 'Código de convite inválido' };
+      }
+
+      // Update user with company
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          company_id: company.id,
+          role: 'employee',
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        return { error: updateError.message };
+      }
+
+      return { company };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  },
+};

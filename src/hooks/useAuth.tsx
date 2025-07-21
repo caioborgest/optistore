@@ -1,29 +1,28 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AuthService } from '@/services/authService';
 import { UserProfile, Company } from '@/types/database';
+import { AuthService } from '@/services/authService';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
-  user: any;
+  user: UserProfile | null;
   userProfile: UserProfile | null;
   company: Company | null;
-  loading: boolean;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (data: any) => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
-  registerCompany: (data: any) => Promise<void>;
-  registerWithInvite: (data: any) => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  registerCompany: (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<{ error?: string }>;
+  registerWithInvite: (inviteCode: string) => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -34,184 +33,175 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  
   const { toast } = useToast();
 
-  const isAuthenticated = !!user && !!userProfile;
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-  const loadCurrentUser = async () => {
+  const checkAuth = async () => {
     try {
-      const { user, userProfile, company, error } = await AuthService.getCurrentUser();
+      setLoading(true);
+      const { user, company } = await AuthService.getCurrentUser();
       
-      if (error) {
-        console.error('Erro ao carregar usuário:', error);
-        setUser(null);
-        setUserProfile(null);
-        setCompany(null);
-      } else {
+      if (user) {
         setUser(user);
-        setUserProfile(userProfile);
-        setCompany(company);
+        setCompany(company || null);
       }
     } catch (error) {
-      console.error('Erro ao carregar usuário:', error);
-      setUser(null);
-      setUserProfile(null);
-      setCompany(null);
+      console.error('Erro ao verificar autenticação:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadCurrentUser();
-  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      setLoading(true);
-      const { user, userProfile, company, error } = await AuthService.signIn(email, password);
+      const { user, company, error } = await AuthService.signIn(email, password);
       
       if (error) {
-        toast({
-          title: 'Erro no login',
-          description: error.message || 'Credenciais inválidas',
-          variant: 'destructive'
-        });
-        return;
+        return { error };
       }
 
-      setUser(user);
-      setUserProfile(userProfile);
-      setCompany(company);
-
+      setUser(user || null);
+      setCompany(company || null);
+      
       toast({
         title: 'Login realizado com sucesso',
-        description: `Bem-vindo(a), ${userProfile?.name}!`
+        description: 'Bem-vindo ao OptiFlow!'
       });
-    } catch (error) {
-      toast({
-        title: 'Erro no login',
-        description: 'Ocorreu um erro inesperado',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
+
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
     }
   };
 
-  const signUp = async (data: any) => {
+  const signUp = async (email: string, password: string, name: string) => {
     try {
-      setLoading(true);
-      const { user, userProfile, company, error } = await AuthService.signUp(data);
+      const { user, error } = await AuthService.signUp(email, password, name);
       
       if (error) {
-        toast({
-          title: 'Erro no cadastro',
-          description: error.message || 'Erro ao criar conta',
-          variant: 'destructive'
-        });
-        return;
+        return { error };
       }
 
-      setUser(user);
-      setUserProfile(userProfile);
-      setCompany(company);
+      setUser(user || null);
+      
+      toast({
+        title: 'Cadastro realizado com sucesso',
+        description: 'Sua conta foi criada!'
+      });
 
-      toast({
-        title: 'Conta criada com sucesso',
-        description: `Bem-vindo(a), ${userProfile?.name}!`
-      });
-    } catch (error) {
-      toast({
-        title: 'Erro no cadastro',
-        description: 'Ocorreu um erro inesperado',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
     }
   };
 
-  const signOut = async () => {
+  const logout = async () => {
     try {
-      setLoading(true);
       await AuthService.signOut();
       setUser(null);
-      setUserProfile(null);
       setCompany(null);
       
       toast({
         title: 'Logout realizado',
-        description: 'Você foi desconectado com sucesso'
+        description: 'Até logo!'
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erro no logout',
-        description: 'Ocorreu um erro ao sair',
+        title: 'Erro ao fazer logout',
+        description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const logout = signOut; // Alias para compatibilidade
-
   const updateProfile = async (updates: Partial<UserProfile>) => {
     try {
-      const { userProfile, error } = await AuthService.updateProfile(updates);
+      const { user, error } = await AuthService.updateProfile(updates);
       
       if (error) {
         toast({
           title: 'Erro ao atualizar perfil',
-          description: error.message || 'Erro ao salvar alterações',
+          description: error,
           variant: 'destructive'
         });
         return;
       }
 
-      setUserProfile(userProfile);
+      setUser(user || null);
+      
       toast({
         title: 'Perfil atualizado',
-        description: 'Suas informações foram salvas com sucesso'
+        description: 'Suas informações foram atualizadas com sucesso'
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erro ao atualizar perfil',
-        description: 'Ocorreu um erro inesperado',
+        description: error.message,
         variant: 'destructive'
       });
     }
   };
 
-  const registerCompany = async (data: any) => {
-    // Implementação futura para registro de empresa
-    console.log('registerCompany não implementado ainda');
+  const registerCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { company, error } = await AuthService.registerCompany(companyData);
+      
+      if (error) {
+        return { error };
+      }
+
+      setCompany(company || null);
+      
+      toast({
+        title: 'Empresa registrada',
+        description: 'Sua empresa foi registrada com sucesso!'
+      });
+
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
   };
 
-  const registerWithInvite = async (data: any) => {
-    // Implementação futura para registro com convite
-    console.log('registerWithInvite não implementado ainda');
+  const registerWithInvite = async (inviteCode: string) => {
+    try {
+      const { company, error } = await AuthService.registerWithInvite(inviteCode);
+      
+      if (error) {
+        return { error };
+      }
+
+      setCompany(company || null);
+      
+      toast({
+        title: 'Convite aceito',
+        description: 'Você foi adicionado à empresa!'
+      });
+
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
-    userProfile,
+    userProfile: user,
     company,
+    isAuthenticated: !!user,
     loading,
-    isAuthenticated,
     signIn,
     signUp,
-    signOut,
     logout,
     updateProfile,
     registerCompany,
-    registerWithInvite
+    registerWithInvite,
   };
 
   return (
