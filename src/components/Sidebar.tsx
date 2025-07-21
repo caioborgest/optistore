@@ -11,7 +11,6 @@ import {
   LogOut,
   Building2,
   Users,
-  Shield,
   Crown,
   Menu,
   X
@@ -101,7 +100,11 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-white/20 rounded-xl">
-              <Building2 className="h-6 w-6 lg:h-8 lg:w-8 text-white" />
+              <img 
+                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+                alt="OptiFlow" 
+                className="h-6 w-6 lg:h-8 lg:w-8"
+              />
             </div>
             <div>
               <h1 className="text-lg lg:text-xl font-bold text-white">OptiFlow</h1>

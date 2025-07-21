@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,7 +131,12 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
+        <div className="text-center">
+          <img 
+            src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+            alt="OptiFlow" 
+            className="mx-auto h-16 w-auto mb-6"
+          />
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             {isSignUp ? 'Criar conta' : 'Entrar no OptiFlow'}
           </h2>

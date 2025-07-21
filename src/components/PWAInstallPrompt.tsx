@@ -56,7 +56,11 @@ const PWAInstallPrompt = () => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Smartphone className="h-5 w-5 text-blue-600" />
+              <img 
+                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+                alt="OptiFlow" 
+                className="h-5 w-5"
+              />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 text-sm">
