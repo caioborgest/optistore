@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Calendar, Users, Filter, Search, MoreHorizontal } from 'lucide-react';
+import { Plus, Calendar, Users, Filter, Search, MoreHorizontal, Paperclip, Eye } from 'lucide-react';
 import { TaskService } from '@/services/taskService';
 import { Task } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import TaskAttachments from './TaskAttachments';
 
 const TaskManager = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -23,6 +24,8 @@ const TaskManager = () => {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   
   // Form states
   const [newTask, setNewTask] = useState({
@@ -179,6 +182,11 @@ const TaskManager = () => {
     }
   };
 
+  const handleViewTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsViewDialogOpen(true);
+  };
+
   const filterTasks = () => {
     let filtered = tasks;
 
@@ -260,7 +268,7 @@ const TaskManager = () => {
                       </p>
                     )}
                     
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                       <span>{task.sector}</span>
                       {task.due_date && (
                         <span className="flex items-center gap-1">
@@ -270,7 +278,16 @@ const TaskManager = () => {
                       )}
                     </div>
                     
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewTask(task)}
+                        className="flex-1 h-8 text-xs"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Ver
+                      </Button>
                       <Select
                         value={task.status}
                         onValueChange={(value) => handleUpdateTaskStatus(task.id, value as Task['status'])}
@@ -285,14 +302,6 @@ const TaskManager = () => {
                           <SelectItem value="cancelled">Cancelado</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -340,6 +349,14 @@ const TaskManager = () => {
                 </div>
                 
                 <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleViewTask(task)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver
+                  </Button>
                   <Select
                     value={task.status}
                     onValueChange={(value) => handleUpdateTaskStatus(task.id, value as Task['status'])}
@@ -354,13 +371,6 @@ const TaskManager = () => {
                       <SelectItem value="cancelled">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteTask(task.id)}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -538,6 +548,87 @@ const TaskManager = () => {
 
       {/* Tasks Display */}
       {viewMode === 'kanban' ? renderKanbanView() : renderListView()}
+
+      {/* Task View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedTask?.title}</DialogTitle>
+          </DialogHeader>
+          
+          {selectedTask && (
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Detalhes</TabsTrigger>
+                <TabsTrigger value="attachments">
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  Anexos
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="details" className="mt-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Status</Label>
+                      <Badge className={`${getStatusColor(selectedTask.status)} text-white`}>
+                        {selectedTask.status}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label>Prioridade</Label>
+                      <Badge className={`${getPriorityColor(selectedTask.priority)} text-white`}>
+                        {selectedTask.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Descrição</Label>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {selectedTask.description || 'Sem descrição'}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Setor</Label>
+                      <p className="mt-1 text-sm">{selectedTask.sector}</p>
+                    </div>
+                    <div>
+                      <Label>Data de Vencimento</Label>
+                      <p className="mt-1 text-sm">
+                        {selectedTask.due_date 
+                          ? new Date(selectedTask.due_date).toLocaleDateString()
+                          : 'Não definida'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Horas Estimadas</Label>
+                      <p className="mt-1 text-sm">{selectedTask.estimated_hours || 0}h</p>
+                    </div>
+                    <div>
+                      <Label>Horas Reais</Label>
+                      <p className="mt-1 text-sm">{selectedTask.actual_hours || 0}h</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="attachments" className="mt-4">
+                <TaskAttachments 
+                  taskId={selectedTask.id} 
+                  canEdit={true}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
