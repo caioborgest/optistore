@@ -24,7 +24,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
   const isMobile = useIsMobile();
 
   const getDashboardData = () => {
-    if (userProfile.role === 'admin') {
+    if (userProfile.is_company_admin) {
       return {
         title: 'Dashboard Administrativo',
         cards: [
@@ -32,16 +32,6 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({ userProfile }) => 
           { title: 'Tarefas Ativas', value: '156', icon: CheckSquare, color: 'text-green-600' },
           { title: 'Projetos', value: '8', icon: BarChart3, color: 'text-purple-600' },
           { title: 'Metas do Mês', value: '92%', icon: TrendingUp, color: 'text-orange-600' }
-        ]
-      };
-    } else if (userProfile.role === 'manager') {
-      return {
-        title: 'Dashboard Gerencial',
-        cards: [
-          { title: 'Equipe', value: '12', icon: Users, color: 'text-blue-600' },
-          { title: 'Tarefas Pendentes', value: '23', icon: Clock, color: 'text-yellow-600' },
-          { title: 'Concluídas', value: '87', icon: CheckSquare, color: 'text-green-600' },
-          { title: 'Atrasadas', value: '4', icon: AlertCircle, color: 'text-red-600' }
         ]
       };
     } else {

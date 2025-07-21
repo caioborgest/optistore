@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ const TaskManager = () => {
       const newTask = {
         ...taskData,
         status: 'pending' as const,
+        priority: taskData.priority || 'medium' as const,
         created_by: userProfile?.id || '',
         sector: taskData.sector || 'Geral',
       };
@@ -109,7 +111,7 @@ const TaskManager = () => {
         due_date: dueDate?.toISOString(),
       };
 
-      const { data, error } = await TaskService.updateTask(updatedTask);
+      const { data, error } = await TaskService.updateTask(selectedTask.id, updatedTask);
       
       if (error) {
         toast({
@@ -347,6 +349,7 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sector, setSector] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
 
   const handleSubmit = () => {
@@ -354,6 +357,7 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
       title,
       description,
       sector,
+      priority,
       due_date: dueDate?.toISOString(),
     });
   };
@@ -385,6 +389,21 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
           value={sector}
           onChange={(e) => setSector(e.target.value)}
         />
+      </div>
+
+      <div>
+        <Label htmlFor="priority">Prioridade</Label>
+        <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setPriority(value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione a prioridade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="low">Baixa</SelectItem>
+            <SelectItem value="medium">Média</SelectItem>
+            <SelectItem value="high">Alta</SelectItem>
+            <SelectItem value="urgent">Urgente</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>

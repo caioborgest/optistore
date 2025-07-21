@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Menu items baseados no papel do usuário
-  const getMenuItems = (role: string, isCompanyAdmin: boolean) => {
+  const getMenuItems = (isCompanyAdmin: boolean) => {
     const baseItems = [
       { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
       { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
@@ -43,69 +43,43 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
       { icon: MessageSquare, label: 'Chat', path: '/chat' },
     ];
 
-    if (role === 'admin') {
-      const managerItems = [
+    if (isCompanyAdmin) {
+      return [
         ...baseItems,
         { icon: Users, label: 'Usuários', path: '/users' },
         { icon: BarChart3, label: 'Relatórios', path: '/reports' },
-        { icon: Settings, label: 'Configurações', path: '/settings' },
-      ];
-
-      if (isCompanyAdmin) {
-        managerItems.push({ icon: Building2, label: 'Empresa', path: '/company' });
-      }
-
-      return managerItems;
-    }
-
-    if (role === 'manager') {
-      return [
-        ...baseItems,
-        { icon: BarChart3, label: 'Relatórios', path: '/reports' },
+        { icon: Building2, label: 'Empresa', path: '/company' },
         { icon: Settings, label: 'Configurações', path: '/settings' },
       ];
     }
 
-    // Employee
     return [
       ...baseItems,
       { icon: Settings, label: 'Configurações', path: '/settings' },
     ];
   };
 
-  const menuItems = getMenuItems(userProfile.role, userProfile.is_company_admin);
+  const menuItems = getMenuItems(userProfile.is_company_admin);
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Crown className="h-3.5 w-3.5" />;
-      case 'manager':
-        return <Shield className="h-3.5 w-3.5" />;
-      default:
-        return <Users className="h-3.5 w-3.5" />;
+  const getRoleIcon = (isCompanyAdmin: boolean) => {
+    if (isCompanyAdmin) {
+      return <Crown className="h-3.5 w-3.5" />;
     }
+    return <Users className="h-3.5 w-3.5" />;
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'manager':
-        return 'Gerente';
-      default:
-        return 'Funcionário';
+  const getRoleLabel = (isCompanyAdmin: boolean) => {
+    if (isCompanyAdmin) {
+      return 'Administrador';
     }
+    return 'Usuário';
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'manager':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      default:
-        return 'bg-green-50 text-green-700 border-green-200';
+  const getRoleColor = (isCompanyAdmin: boolean) => {
+    if (isCompanyAdmin) {
+      return 'bg-purple-50 text-purple-700 border-purple-200';
     }
+    return 'bg-green-50 text-green-700 border-green-200';
   };
 
   // Mobile toggle button
@@ -154,12 +128,12 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
               {userProfile.name}
             </p>
             <p className="text-xs lg:text-sm text-sidebar-foreground/70 truncate">
-              {userProfile.sector}
+              {userProfile.email}
             </p>
-            <Badge className={`text-xs mt-1 lg:mt-2 border ${getRoleColor(userProfile.role)}`} variant="outline">
+            <Badge className={`text-xs mt-1 lg:mt-2 border ${getRoleColor(userProfile.is_company_admin)}`} variant="outline">
               <span className="flex items-center gap-1.5">
-                {getRoleIcon(userProfile.role)}
-                {getRoleLabel(userProfile.role)}
+                {getRoleIcon(userProfile.is_company_admin)}
+                {getRoleLabel(userProfile.is_company_admin)}
               </span>
             </Badge>
           </div>

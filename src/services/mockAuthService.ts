@@ -10,8 +10,6 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  role?: 'admin' | 'manager' | 'employee';
-  sector?: string;
 }
 
 export class MockAuthService {
@@ -33,9 +31,6 @@ export class MockAuthService {
     email: 'admin@exemplo.com',
     avatar_url: null,
     company_id: '1',
-    role: 'admin',
-    sector: 'Administração',
-    is_active: true,
     is_company_admin: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -106,10 +101,7 @@ export class MockAuthService {
       email: data.email,
       avatar_url: null,
       company_id: '1',
-      role: data.role || 'employee',
-      sector: data.sector || 'Geral',
-      is_active: true,
-      is_company_admin: data.role === 'admin',
+      is_company_admin: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -206,13 +198,10 @@ export class MockAuthService {
 
     const adminUser: UserProfile = {
       id: Date.now().toString(),
-      name: companyData.adminName,
-      email: companyData.adminEmail,
+      name: companyData.adminName || 'Admin',
+      email: companyData.adminEmail || companyData.email,
       avatar_url: null,
       company_id: newCompany.id,
-      role: 'admin',
-      sector: 'Administração',
-      is_active: true,
       is_company_admin: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
