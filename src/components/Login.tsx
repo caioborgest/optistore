@@ -1,477 +1,332 @@
+
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useCompany } from '@/services/companyService';
-import { Building2, Users, BarChart3, Mail, Lock, User, MapPin, Loader2, Building, Key, Phone } from 'lucide-react';
-const SECTORS = ['Vendas', 'Estoque', 'Caixa', 'Entregas', 'Limpeza', 'Administração', 'Materiais Básicos', 'Tintas', 'Ferramentas'];
+
 const Login = () => {
-  const {
-    signIn,
-    registerCompany,
-    registerWithInvite,
-    loading
-  } = useAuth();
-  const {
-    validateInviteCode
-  } = useCompany();
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: ''
-  });
-  const [companyData, setCompanyData] = useState({
-    name: '',
-    email: '',
-    adminName: '',
-    adminEmail: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    address: ''
-  });
-  const [inviteData, setInviteData] = useState({
-    inviteCode: '',
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    sector: '',
-    role: 'colaborador' as 'gerente' | 'supervisor' | 'colaborador',
-    phone: ''
-  });
-  const [inviteCodeValidation, setInviteCodeValidation] = useState<{
-    isValid: boolean;
-    companyName: string;
-    isValidating: boolean;
-  }>({
-    isValid: false,
-    companyName: '',
-    isValidating: false
-  });
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginData.email || !loginData.password) {
-      alert('Preencha todos os campos');
-      return;
-    }
-    await signIn(loginData.email, loginData.password);
-  };
-  const handleCompanyRegistration = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isCompanyRegister, setIsCompanyRegister] = useState(false);
+  const [isInviteRegister, setIsInviteRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    // Validações
-    if (!companyData.name || !companyData.email || !companyData.adminName || !companyData.adminEmail || !companyData.password) {
-      alert('Preencha todos os campos obrigatórios');
-      return;
-    }
-    if (companyData.password !== companyData.confirmPassword) {
-      alert('As senhas não coincidem');
-      return;
-    }
-    if (companyData.password.length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-    await registerCompany({
-      name: companyData.name,
-      email: companyData.email,
-      adminName: companyData.adminName,
-      adminEmail: companyData.adminEmail,
-      password: companyData.password,
-      phone: companyData.phone,
-      address: companyData.address
-    });
-  };
-  const handleInviteRegistration = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { signIn, signUp, registerCompany, registerWithInvite } = useAuth();
+  const { toast } = useToast();
 
-    // Validações
-    if (!inviteData.inviteCode || !inviteData.name || !inviteData.email || !inviteData.password || !inviteData.sector) {
-      alert('Preencha todos os campos obrigatórios');
-      return;
-    }
-    if (inviteData.password !== inviteData.confirmPassword) {
-      alert('As senhas não coincidem');
-      return;
-    }
-    if (inviteData.password.length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-    if (!inviteCodeValidation.isValid) {
-      alert('Código de convite inválido');
-      return;
-    }
-    await registerWithInvite({
-      inviteCode: inviteData.inviteCode,
-      name: inviteData.name,
-      email: inviteData.email,
-      password: inviteData.password,
-      sector: inviteData.sector,
-      role: inviteData.role,
-      phone: inviteData.phone
-    });
-  };
-  const handleInviteCodeChange = async (code: string) => {
-    setInviteData(prev => ({
-      ...prev,
-      inviteCode: code.toUpperCase()
-    }));
-    if (code.length === 8) {
-      setInviteCodeValidation(prev => ({
-        ...prev,
-        isValidating: true
-      }));
-      const {
-        company,
-        error
-      } = await validateInviteCode(code);
-      if (!error && company) {
-        setInviteCodeValidation({
-          isValid: true,
-          companyName: company.name,
-          isValidating: false
-        });
-      } else {
-        setInviteCodeValidation({
-          isValid: false,
-          companyName: '',
-          isValidating: false
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const result = await signIn(email, password);
+      if (result.error) {
+        toast({
+          title: 'Erro no login',
+          description: result.error,
+          variant: 'destructive'
         });
       }
-    } else {
-      setInviteCodeValidation({
-        isValid: false,
-        companyName: '',
-        isValidating: false
+    } catch (error) {
+      toast({
+        title: 'Erro no login',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
       });
+    } finally {
+      setLoading(false);
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Lado esquerdo - Apresentação */}
-        <div className="space-y-8">
-          <div className="text-center lg:text-left">
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              OptiFlow
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">Gestão Operacional Inteligente para o Varejo.</p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-              <Building2 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Gestão de Tarefas</h3>
-              <p className="text-sm text-gray-600">Organize e acompanhe todas as atividades da loja</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-              <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Comunicação</h3>
-              <p className="text-sm text-gray-600">Chat integrado por setor e tarefa</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-              <BarChart3 className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Relatórios</h3>
-              <p className="text-sm text-gray-600">KPIs e produtividade em tempo real</p>
-            </div>
-          </div>
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const result = await signUp(email, password, name);
+      if (result.error) {
+        toast({
+          title: 'Erro no cadastro',
+          description: result.error,
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro no cadastro',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompanyRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const companyData = {
+        name: companyName,
+        email: companyEmail,
+        phone: companyPhone,
+        address: companyAddress,
+        is_active: true,
+        invite_code: Math.random().toString(36).substring(2, 15),
+      };
+      
+      const result = await registerCompany(companyData);
+      if (result.error) {
+        toast({
+          title: 'Erro no registro da empresa',
+          description: result.error,
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro no registro da empresa',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInviteRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const result = await registerWithInvite(inviteCode);
+      if (result.error) {
+        toast({
+          title: 'Erro no convite',
+          description: result.error,
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro no convite',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <img 
+            src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+            alt="OptiFlow" 
+            className="mx-auto h-16 w-auto mb-6"
+          />
+          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
+            {isSignUp ? 'Criar conta' : 'Entrar no OptiFlow'}
+          </h2>
         </div>
 
-        {/* Lado direito - Formulários */}
-        <Card className="w-full max-w-lg mx-auto">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="company">Nova Empresa</TabsTrigger>
-              <TabsTrigger value="invite">Com Convite</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold">Fazer Login</CardTitle>
-                <p className="text-gray-600">Acesse sua conta para continuar</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-10" value={loginData.email} onChange={e => setLoginData(prev => ({
-                      ...prev,
-                      email: e.target.value
-                    }))} disabled={loading} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="login-password" type="password" placeholder="••••••••" className="pl-10" value={loginData.password} onChange={e => setLoginData(prev => ({
-                      ...prev,
-                      password: e.target.value
-                    }))} disabled={loading} />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                    {loading ? <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Entrando...
-                      </> : 'Entrar'}
+        {!isCompanyRegister && !isInviteRegister && (
+          <form className="mt-8 space-y-6" onSubmit={isSignUp ? handleSignUp : handleSignIn}>
+            <div className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <Label htmlFor="name">Nome</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Seu nome"
+                  />
+                </div>
+              )}
+              
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Sua senha"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Processando...' : (isSignUp ? 'Criar conta' : 'Entrar')}
+              </Button>
+            </div>
+
+            <div className="text-center space-y-2">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Criar'}
+              </Button>
+              
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsCompanyRegister(true)}
+                  >
+                    Registrar Empresa
                   </Button>
-                </form>
-                
-                
-              </CardContent>
-            </TabsContent>
-            
-            <TabsContent value="company">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold">Registrar Nova Empresa</CardTitle>
-                <p className="text-gray-600">Crie sua empresa e receba um código para sua equipe</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCompanyRegistration} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="company-name">Nome da Empresa *</Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="company-name" type="text" placeholder="Loja ABC Materiais" className="pl-10" value={companyData.name} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        name: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="company-email">Email da Empresa *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="company-email" type="email" placeholder="contato@empresa.com" className="pl-10" value={companyData.email} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        email: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-name">Nome do Administrador *</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="admin-name" type="text" placeholder="Seu nome completo" className="pl-10" value={companyData.adminName} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        adminName: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-email">Email do Administrador *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="admin-email" type="email" placeholder="admin@empresa.com" className="pl-10" value={companyData.adminEmail} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        adminEmail: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="company-phone">Telefone</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="company-phone" type="tel" placeholder="(11) 99999-9999" className="pl-10" value={companyData.phone} onChange={e => setCompanyData(prev => ({
-                      ...prev,
-                      phone: e.target.value
-                    }))} disabled={loading} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="company-address">Endereço</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="company-address" type="text" placeholder="Rua, número, bairro, cidade" className="pl-10" value={companyData.address} onChange={e => setCompanyData(prev => ({
-                      ...prev,
-                      address: e.target.value
-                    }))} disabled={loading} />
-                    </div>
-                  </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-password">Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="admin-password" type="password" placeholder="••••••••" className="pl-10" value={companyData.password} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        password: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-confirm-password">Confirmar Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="admin-confirm-password" type="password" placeholder="••••••••" className="pl-10" value={companyData.confirmPassword} onChange={e => setCompanyData(prev => ({
-                        ...prev,
-                        confirmPassword: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                    {loading ? <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Criando empresa...
-                      </> : 'Criar Empresa'}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsInviteRegister(true)}
+                  >
+                    Tenho um código de convite
                   </Button>
-                </form>
-              </CardContent>
-            </TabsContent>
+                </div>
+              )}
+            </div>
+          </form>
+        )}
 
-            <TabsContent value="invite">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold">Cadastro com Convite</CardTitle>
-                <p className="text-gray-600">Use o código fornecido pela sua empresa</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleInviteRegistration} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-code">Código de Convite *</Label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="invite-code" type="text" placeholder="ABC12345" className="pl-10 uppercase" maxLength={8} value={inviteData.inviteCode} onChange={e => handleInviteCodeChange(e.target.value)} disabled={loading} />
-                      {inviteCodeValidation.isValidating && <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin" />}
-                    </div>
-                    {inviteCodeValidation.isValid && <p className="text-sm text-green-600 flex items-center gap-1">
-                        ✓ Empresa: {inviteCodeValidation.companyName}
-                      </p>}
-                    {inviteData.inviteCode.length === 8 && !inviteCodeValidation.isValid && !inviteCodeValidation.isValidating && <p className="text-sm text-red-600">
-                        ✗ Código de convite inválido
-                      </p>}
-                  </div>
+        {isCompanyRegister && (
+          <form className="mt-8 space-y-6" onSubmit={handleCompanyRegister}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="companyName">Nome da Empresa</Label>
+                <Input
+                  id="companyName"
+                  type="text"
+                  required
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Nome da sua empresa"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="companyEmail">Email da Empresa</Label>
+                <Input
+                  id="companyEmail"
+                  type="email"
+                  required
+                  value={companyEmail}
+                  onChange={(e) => setCompanyEmail(e.target.value)}
+                  placeholder="contato@empresa.com"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="companyPhone">Telefone</Label>
+                <Input
+                  id="companyPhone"
+                  type="tel"
+                  value={companyPhone}
+                  onChange={(e) => setCompanyPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="companyAddress">Endereço</Label>
+                <Input
+                  id="companyAddress"
+                  type="text"
+                  value={companyAddress}
+                  onChange={(e) => setCompanyAddress(e.target.value)}
+                  placeholder="Endereço da empresa"
+                />
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-name">Nome Completo *</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="invite-name" type="text" placeholder="Seu nome completo" className="pl-10" value={inviteData.name} onChange={e => setInviteData(prev => ({
-                        ...prev,
-                        name: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-email">Email *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="invite-email" type="email" placeholder="seu@email.com" className="pl-10" value={inviteData.email} onChange={e => setInviteData(prev => ({
-                        ...prev,
-                        email: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                  </div>
+            <div className="space-y-2">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Registrando...' : 'Registrar Empresa'}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setIsCompanyRegister(false)}
+              >
+                Voltar
+              </Button>
+            </div>
+          </form>
+        )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-sector">Setor *</Label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-                        <Select value={inviteData.sector} onValueChange={value => setInviteData(prev => ({
-                        ...prev,
-                        sector: value
-                      }))} disabled={loading}>
-                          <SelectTrigger className="pl-10">
-                            <SelectValue placeholder="Selecione seu setor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SECTORS.map(sector => <SelectItem key={sector} value={sector}>
-                                {sector}
-                              </SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-role">Função *</Label>
-                      <Select value={inviteData.role} onValueChange={(value: 'gerente' | 'supervisor' | 'colaborador') => setInviteData(prev => ({
-                      ...prev,
-                      role: value
-                    }))} disabled={loading}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="colaborador">Colaborador</SelectItem>
-                          <SelectItem value="supervisor">Supervisor</SelectItem>
-                          <SelectItem value="gerente">Gerente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+        {isInviteRegister && (
+          <form className="mt-8 space-y-6" onSubmit={handleInviteRegister}>
+            <div>
+              <Label htmlFor="inviteCode">Código de Convite</Label>
+              <Input
+                id="inviteCode"
+                type="text"
+                required
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Digite o código de convite"
+              />
+            </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-phone">Telefone</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input id="invite-phone" type="tel" placeholder="(11) 99999-9999" className="pl-10" value={inviteData.phone} onChange={e => setInviteData(prev => ({
-                      ...prev,
-                      phone: e.target.value
-                    }))} disabled={loading} />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-password">Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="invite-password" type="password" placeholder="••••••••" className="pl-10" value={inviteData.password} onChange={e => setInviteData(prev => ({
-                        ...prev,
-                        password: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-confirm-password">Confirmar Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input id="invite-confirm-password" type="password" placeholder="••••••••" className="pl-10" value={inviteData.confirmPassword} onChange={e => setInviteData(prev => ({
-                        ...prev,
-                        confirmPassword: e.target.value
-                      }))} disabled={loading} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" className="w-full" size="lg" disabled={loading || !inviteCodeValidation.isValid}>
-                    {loading ? <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Criando conta...
-                      </> : 'Criar Conta'}
-                  </Button>
-                </form>
-              </CardContent>
-            </TabsContent>
-          </Tabs>
-        </Card>
+            <div className="space-y-2">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Validando...' : 'Usar Convite'}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setIsInviteRegister(false)}
+              >
+                Voltar
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Login;

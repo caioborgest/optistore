@@ -12,10 +12,13 @@ import { CompanySettings } from '../components/CompanySettings';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../hooks/useAuth';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import { useIsMobile } from '../hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const { user, userProfile, isAuthenticated, loading } = useAuth();
+  const isMobile = useIsMobile();
 
   if (loading) {
     return (
@@ -33,21 +36,32 @@ const Index = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar userProfile={userProfile} />
-      <main className="flex-1 overflow-hidden">
-        <Routes>
-          <Route path="/" element={<RoleDashboard userProfile={userProfile} />} />
-          <Route path="/dashboard" element={<RoleDashboard userProfile={userProfile} />} />
-          <Route path="/tasks" element={<TaskManager />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/company" element={<CompanySettings />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </main>
+    <div className="min-h-screen bg-gray-50">
+      <div className={cn(
+        "flex h-screen",
+        isMobile ? "flex-col" : "flex-row"
+      )}>
+        <Sidebar userProfile={userProfile} />
+        
+        <main className={cn(
+          "flex-1 overflow-auto",
+          isMobile ? "pt-16" : ""
+        )}>
+          <div className="min-h-full">
+            <Routes>
+              <Route path="/" element={<RoleDashboard userProfile={userProfile} />} />
+              <Route path="/dashboard" element={<RoleDashboard userProfile={userProfile} />} />
+              <Route path="/tasks" element={<TaskManager />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/company" element={<CompanySettings />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
       <PWAInstallPrompt />
     </div>
   );

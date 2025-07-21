@@ -1,11 +1,46 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, X, Smartphone, Monitor } from 'lucide-react';
+import { Download, X, Smartphone, Monitor, Bell } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA';
+import { useToast } from '@/hooks/use-toast';
 
 const PWAInstallPrompt = () => {
-  const { showInstallPrompt, installApp, dismissInstallPrompt, isStandalone } = usePWA();
+  const { 
+    showInstallPrompt, 
+    installApp, 
+    dismissInstallPrompt, 
+    isStandalone,
+    requestNotificationPermission,
+    notificationPermission
+  } = usePWA();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Solicitar permissão de notificação após instalação
+    if (isStandalone && notificationPermission === 'default') {
+      setTimeout(() => {
+        requestNotificationPermission();
+      }, 2000);
+    }
+  }, [isStandalone, notificationPermission, requestNotificationPermission]);
+
+  const handleInstallClick = async () => {
+    try {
+      await installApp();
+      toast({
+        title: 'App instalado!',
+        description: 'OptiFlow foi instalado com sucesso'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro na instalação',
+        description: 'Não foi possível instalar o app',
+        variant: 'destructive'
+      });
+    }
+  };
 
   // Don't show if already installed or in standalone mode
   if (!showInstallPrompt || isStandalone) {
@@ -21,14 +56,18 @@ const PWAInstallPrompt = () => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Smartphone className="h-5 w-5 text-blue-600" />
+              <img 
+                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+                alt="OptiFlow" 
+                className="h-5 w-5"
+              />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 text-sm">
-                Instalar App
+                Instalar OptiFlow
               </h3>
               <p className="text-xs text-gray-600">
-                Acesso rápido na tela inicial
+                Acesso rápido e offline
               </p>
             </div>
           </div>
@@ -48,6 +87,10 @@ const PWAInstallPrompt = () => {
             <span>Funciona offline</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-600">
+            <Bell className="h-3 w-3" />
+            <span>Notificações push</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
             <Download className="h-3 w-3" />
             <span>Atualizações automáticas</span>
           </div>
@@ -65,7 +108,7 @@ const PWAInstallPrompt = () => {
           </div>
         ) : (
           <Button 
-            onClick={installApp}
+            onClick={handleInstallClick}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2"
           >
             <Download className="h-4 w-4 mr-2" />

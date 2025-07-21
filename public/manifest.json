@@ -1,3 +1,4 @@
+
 {
   "name": "OptiFlow - Gestão Operacional",
   "short_name": "OptiFlow",
@@ -5,26 +6,26 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3B82F6",
+  "theme_color": "#10B981",
   "orientation": "portrait-primary",
   "scope": "/",
   "categories": ["business", "productivity"],
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/pwa-192x192.png",
+      "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/pwa-512x512.png",
+      "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
       "sizes": "180x180",
       "type": "image/png"
     }
@@ -37,7 +38,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/pwa-192x192.png",
+          "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
           "sizes": "192x192"
         }
       ]
@@ -49,7 +50,7 @@
       "url": "/tasks",
       "icons": [
         {
-          "src": "/pwa-192x192.png",
+          "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
           "sizes": "192x192"
         }
       ]
@@ -61,7 +62,7 @@
       "url": "/clients",
       "icons": [
         {
-          "src": "/pwa-192x192.png",
+          "src": "/lovable-uploads/7c026003-a88f-4443-8e2c-116f181423fd.png",
           "sizes": "192x192"
         }
       ]

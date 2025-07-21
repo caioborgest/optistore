@@ -1,368 +1,440 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useRealTimeChat } from '@/hooks/useRealTimeChat';
+import { Send, Plus, Users, MessageCircle, Hash } from 'lucide-react';
+import { ChatService } from '@/services/chatService';
+import { Chat as ChatType, Message } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Send, 
-  Search, 
-  Plus,
-  MessageSquare,
-  Users,
-  Phone,
-  Video,
-  MoreVertical,
-  Paperclip,
-  Smile,
-  Hash,
-  Building,
-  CheckCheck,
-  Clock,
-  Loader2
-} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Chat = () => {
+  const [chats, setChats] = useState<ChatType[]>([]);
+  const [selectedChat, setSelectedChat] = useState<ChatType | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isCreateChatOpen, setIsCreateChatOpen] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
+  const [newChatType, setNewChatType] = useState<'direct' | 'group'>('group');
+  
   const { userProfile } = useAuth();
   const { toast } = useToast();
-  const [newMessage, setNewMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const {
-    messages,
-    chats,
-    currentChat,
-    isLoading,
-    isConnected,
-    sendMessage: sendChatMessage,
-    selectChat,
-    markAsRead,
-    refreshChats,
-    unreadCount
-  } = useRealTimeChat({ autoMarkAsRead: true });
-
-  // Auto scroll para novas mensagens
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
+  const loadChats = async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar chats gerais
+      const { data: generalChats, error: generalError } = await ChatService.getChats();
+      if (generalError) {
+        console.error('Erro ao carregar chats gerais:', generalError);
+      }
+      
+      // Carregar chats de grupo do usuário
+      if (userProfile?.id) {
+        const { data: groupChats, error: groupError } = await ChatService.getGroupChats(userProfile.id);
+        if (groupError) {
+          console.error('Erro ao carregar chats de grupo:', groupError);
+        }
+        
+        // Combinar chats gerais e de grupo
+        const allChats = [...(generalChats || []), ...(groupChats || [])];
+        setChats(allChats);
+        
+        // Selecionar primeiro chat se disponível
+        if (allChats.length > 0 && !selectedChat) {
+          setSelectedChat(allChats[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar chats:', error);
+      toast({
+        title: 'Erro ao carregar chats',
+        description: 'Ocorreu um erro ao carregar os chats',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMessages = async (chatId: string) => {
+    try {
+      const { data: messagesData, error } = await ChatService.getMessages(chatId);
+      
+      if (error) {
+        console.error('Erro ao carregar mensagens:', error);
+        return;
+      }
+      
+      setMessages(messagesData || []);
+    } catch (error) {
+      console.error('Erro ao carregar mensagens:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadChats();
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (selectedChat) {
+      loadMessages(selectedChat.id);
+      
+      // Configurar listener para mensagens em tempo real
+      const channel = supabase
+        .channel('messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `chat_id=eq.${selectedChat.id}`
+          },
+          (payload) => {
+            setMessages(prev => [...prev, payload.new as Message]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [selectedChat]);
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !currentChat) return;
+    if (!newMessage.trim() || !selectedChat || !userProfile?.id) return;
 
     try {
-      await sendChatMessage(newMessage);
+      const { data: messageData, error } = await ChatService.sendMessage(
+        selectedChat.id,
+        newMessage.trim(),
+        userProfile.id
+      );
+
+      if (error) {
+        toast({
+          title: 'Erro ao enviar mensagem',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       setNewMessage('');
+      // A mensagem será adicionada via realtime
     } catch (error) {
       toast({
         title: 'Erro ao enviar mensagem',
-        description: 'Não foi possível enviar a mensagem',
+        description: 'Ocorreu um erro inesperado',
         variant: 'destructive'
       });
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  const handleCreateChat = async () => {
+    if (!newChatName.trim()) return;
+
+    try {
+      const { data: chatData, error } = await ChatService.createChat(
+        newChatName.trim(),
+        newChatType,
+        [] // Por enquanto, criamos sem membros adicionais
+      );
+
+      if (error) {
+        toast({
+          title: 'Erro ao criar chat',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (chatData) {
+        setChats([chatData, ...chats]);
+      }
+      setNewChatName('');
+      setIsCreateChatOpen(false);
+      
+      toast({
+        title: 'Chat criado',
+        description: 'Chat criado com sucesso'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro ao criar chat',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
     }
   };
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatMessageTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
     });
   };
 
-  const getChatIcon = (type: string) => {
-    switch (type) {
-      case 'group':
-        return <Users className="h-6 w-6 text-white" />;
-      case 'sector':
-        return <Building className="h-6 w-6 text-white" />;
-      case 'task':
-        return <Hash className="h-6 w-6 text-white" />;
-      default:
-        return <MessageSquare className="h-6 w-6 text-white" />;
+  const formatMessageDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Hoje';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Ontem';
+    } else {
+      return date.toLocaleDateString('pt-BR');
     }
   };
 
-  const filteredChats = chats.filter(chat =>
-    chat.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.members.some(member => 
-      member.user?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Chat Interno</h1>
-          <p className="text-gray-600 mt-1">
-            Comunicação em tempo real com a equipe
-            {unreadCount > 0 && (
-              <Badge className="ml-2 bg-red-500">
-                {unreadCount} não lidas
-              </Badge>
-            )}
-          </p>
-        </div>
-        <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Conversa
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nova Conversa</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Funcionalidade em desenvolvimento. Em breve você poderá criar novas conversas.
-              </p>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-        {/* Lista de Chats */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              <CardTitle>Conversas</CardTitle>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input placeholder="Buscar conversas..." className="pl-10" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-4 text-center">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Carregando conversas...</p>
-              </div>
-            ) : filteredChats.length === 0 ? (
-              <div className="p-4 text-center">
-                <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Nenhuma conversa encontrada</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {filteredChats.map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => selectChat(chat.id)}
-                    className={`p-4 cursor-pointer border-b hover:bg-gray-50 transition-colors ${
-                      currentChat?.id === chat.id ? 'bg-blue-50 border-r-4 border-r-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        {chat.type !== 'direct' ? (
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            {getChatIcon(chat.type)}
-                          </div>
-                        ) : (
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={chat.members[0]?.user?.avatar_url} />
-                            <AvatarFallback>
-                              {chat.members[0]?.user?.name?.charAt(0) || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-gray-900 truncate">
-                            {chat.name || (chat.type === 'direct' ? chat.members[0]?.user?.name : 'Chat sem nome')}
-                          </h4>
-                          <span className="text-xs text-gray-500">
-                            {chat.last_message ? formatTime(chat.last_message.created_at) : ''}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-sm text-gray-600 truncate">
-                            {chat.last_message?.content || 'Nenhuma mensagem'}
-                          </p>
-                          {chat.unread_count > 0 && (
-                            <Badge className="bg-red-500 hover:bg-red-600 text-xs">
-                              {chat.unread_count}
-                            </Badge>
-                          )}
-                        </div>
-                        {chat.type !== 'direct' && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {chat.members.length} membros
-                          </p>
-                        )}
-                      </div>
-                    </div>
+    <div className="flex h-[600px] border rounded-lg overflow-hidden">
+      {/* Sidebar - Lista de Chats */}
+      <div className="w-1/3 border-r bg-gray-50">
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Conversas</h2>
+            
+            <Dialog open={isCreateChatOpen} onOpenChange={setIsCreateChatOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Nova Conversa</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="chat-name">Nome da Conversa</Label>
+                    <Input
+                      id="chat-name"
+                      value={newChatName}
+                      onChange={(e) => setNewChatName(e.target.value)}
+                      placeholder="Digite o nome da conversa"
+                    />
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Área de Mensagens */}
-        <Card className="lg:col-span-2 flex flex-col">
-          {currentChat ? (
-            <>
-              {/* Header do Chat */}
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {currentChat.type !== 'direct' ? (
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        {getChatIcon(currentChat.type)}
-                      </div>
-                    ) : (
-                      <Avatar>
-                        <AvatarImage src={currentChat.members[0]?.user?.avatar_url} />
-                        <AvatarFallback>
-                          {currentChat.members[0]?.user?.name?.charAt(0) || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {currentChat.name || (currentChat.type === 'direct' ? currentChat.members[0]?.user?.name : 'Chat sem nome')}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {currentChat.type !== 'direct' 
-                          ? `${currentChat.members.length} membros` 
-                          : isConnected ? 'Online' : 'Offline'
-                        }
-                      </p>
-                    </div>
+                  
+                  <div>
+                    <Label htmlFor="chat-type">Tipo</Label>
+                    <Select value={newChatType} onValueChange={(value: 'direct' | 'group') => setNewChatType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="group">Grupo</SelectItem>
+                        <SelectItem value="direct">Direto</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      {isConnected ? (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          Conectado
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          Desconectado
-                        </>
-                      )}
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
+                  
+                  <div className="flex gap-2">
+                    <Button onClick={handleCreateChat} className="flex-1">
+                      Criar
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsCreateChatOpen(false)}>
+                      Cancelar
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
-
-              {/* Mensagens */}
-              <CardContent className="flex-1 p-4 overflow-y-auto">
-                <div className="space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Nenhuma mensagem ainda</p>
-                      <p className="text-xs text-gray-400">Seja o primeiro a enviar uma mensagem!</p>
-                    </div>
-                  ) : (
-                    messages.map((message) => {
-                      const isCurrentUser = message.sender_id === userProfile?.id;
-                      return (
-                        <div
-                          key={message.id}
-                          className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
-                        >
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={message.sender?.avatar_url} />
-                            <AvatarFallback>
-                              {message.sender?.name?.charAt(0) || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className={`flex-1 max-w-xs lg:max-w-md ${isCurrentUser ? 'text-right' : ''}`}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-gray-900">
-                                {isCurrentUser ? 'Você' : message.sender?.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatTime(message.created_at)}
-                              </span>
-                            </div>
-                            <div
-                              className={`p-3 rounded-lg ${
-                                isCurrentUser
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-900'
-                              }`}
-                            >
-                              {message.content}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </CardContent>
-
-              {/* Input de Mensagem */}
-              <div className="p-4 border-t">
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Smile className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    placeholder="Digite sua mensagem..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="flex-1"
-                    disabled={!isConnected}
-                  />
-                  <Button 
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || !isConnected}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        
+        <ScrollArea className="flex-1">
+          <div className="p-2">
+            {chats.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma conversa encontrada</p>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Selecione uma conversa
-                </h3>
-                <p className="text-gray-500">
-                  Escolha uma conversa da lista para começar a trocar mensagens
-                </p>
+            ) : (
+              <div className="space-y-2">
+                {chats.map((chat) => (
+                  <Card
+                    key={chat.id}
+                    className={`cursor-pointer hover:bg-gray-100 transition-colors ${
+                      selectedChat?.id === chat.id ? 'bg-blue-50 border-blue-200' : ''
+                    }`}
+                    onClick={() => setSelectedChat(chat)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={chat.avatar_url} />
+                          <AvatarFallback>
+                            {chat.type === 'group' ? <Hash className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium truncate">
+                              {chat.name || 'Conversa sem nome'}
+                            </p>
+                            <Badge variant="outline" className="text-xs">
+                              {chat.type === 'group' ? 'Grupo' : 'Direto'}
+                            </Badge>
+                          </div>
+                          {chat.last_message_at && (
+                            <p className="text-xs text-gray-500">
+                              {formatMessageTime(chat.last_message_at)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Área de Mensagens */}
+      <div className="flex-1 flex flex-col">
+        {selectedChat ? (
+          <>
+            {/* Header da Conversa */}
+            <div className="p-4 border-b bg-white">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={selectedChat.avatar_url} />
+                  <AvatarFallback>
+                    {selectedChat.type === 'group' ? <Hash className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold">{selectedChat.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedChat.type === 'group' ? 'Grupo' : 'Conversa Direta'}
+                  </p>
+                </div>
               </div>
             </div>
-          )}
-        </Card>
+
+            {/* Mensagens */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {messages.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma mensagem ainda</p>
+                    <p className="text-sm">Seja o primeiro a enviar uma mensagem!</p>
+                  </div>
+                ) : (
+                  messages.map((message, index) => {
+                    const isCurrentUser = message.sender_id === userProfile?.id;
+                    const showDate = index === 0 || 
+                      formatMessageDate(message.created_at) !== formatMessageDate(messages[index - 1].created_at);
+                    
+                    return (
+                      <div key={message.id}>
+                        {showDate && (
+                          <div className="text-center my-4">
+                            <Separator className="mb-2" />
+                            <span className="text-xs text-gray-500 bg-white px-2">
+                              {formatMessageDate(message.created_at)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className={`flex gap-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                          {!isCurrentUser && (
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback>
+                                {message.sender?.name?.charAt(0) || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          
+                          <div className={`max-w-xs lg:max-w-md ${isCurrentUser ? 'order-1' : 'order-2'}`}>
+                            <div className={`rounded-lg p-3 ${
+                              isCurrentUser 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-100 text-gray-900'
+                            }`}>
+                              {!isCurrentUser && (
+                                <p className="text-xs font-medium mb-1 opacity-75">
+                                  {message.sender?.name || 'Usuário'}
+                                </p>
+                              )}
+                              <p className="text-sm">{message.content}</p>
+                            </div>
+                            <p className={`text-xs mt-1 ${
+                              isCurrentUser ? 'text-right text-gray-500' : 'text-left text-gray-500'
+                            }`}>
+                              {formatMessageTime(message.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            {/* Input de Mensagem */}
+            <div className="p-4 border-t bg-white">
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Selecione uma conversa para começar</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
