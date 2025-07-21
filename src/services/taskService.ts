@@ -39,7 +39,8 @@ export class TaskService {
         .from('tasks')
         .insert({
           ...task,
-          created_by: user.id
+          created_by: user.id,
+          status: task.status || 'pending'
         })
         .select()
         .single();
@@ -145,43 +146,3 @@ export class TaskService {
     }
   }
 }
-
-export const useTasks = () => {
-  const getTasks = async () => {
-    return await TaskService.getTasks();
-  };
-
-  const createTask = async (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
-    return await TaskService.createTask(task);
-  };
-
-  const updateTask = async (id: string, updates: Partial<Task>) => {
-    return await TaskService.updateTask(id, updates);
-  };
-
-  const deleteTask = async (id: string) => {
-    return await TaskService.deleteTask(id);
-  };
-
-  const getUserTasks = async (userId: string) => {
-    return await TaskService.getUserTasks(userId);
-  };
-
-  const getTasksBySector = async (sector: string) => {
-    return await TaskService.getTasksBySector(sector);
-  };
-
-  const completeTask = async (id: string) => {
-    return await TaskService.completeTask(id);
-  };
-
-  return {
-    getTasks,
-    createTask,
-    updateTask,
-    deleteTask,
-    getUserTasks,
-    getTasksBySector,
-    completeTask
-  };
-};

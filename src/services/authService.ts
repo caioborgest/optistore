@@ -229,33 +229,3 @@ export class AuthService {
     }
   }
 }
-
-export const useAuth = () => {
-  const signIn = async (email: string, password: string) => {
-    return await AuthService.signIn(email, password);
-  };
-
-  const signUp = async (data: RegisterData) => {
-    return await AuthService.signUp(data);
-  };
-
-  const signOut = async () => {
-    return await AuthService.signOut();
-  };
-
-  const getCurrentUser = async () => {
-    return await AuthService.getCurrentUser();
-  };
-
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    return await AuthService.updateProfile(updates);
-  };
-
-  return {
-    signIn,
-    signUp,
-    signOut,
-    getCurrentUser,
-    updateProfile
-  };
-};

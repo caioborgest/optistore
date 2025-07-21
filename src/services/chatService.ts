@@ -11,7 +11,7 @@ export class ChatService {
       const { data, error } = await supabase
         .from('chats')
         .select('*')
-        .eq('type', 'group')
+        .eq('type', 'channel')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -163,7 +163,7 @@ export class ChatService {
           membersToAdd.map(userId => ({
             chat_id: chat.id,
             user_id: userId,
-            role: userId === user.id ? 'admin' : 'member'
+            role: (userId === user.id ? 'admin' : 'member') as 'admin' | 'member'
           }))
         );
 
@@ -216,48 +216,3 @@ export class ChatService {
     }
   }
 }
-
-export const useChat = () => {
-  const getChannels = async () => {
-    return await ChatService.getChannels();
-  };
-
-  const getDirectChats = async (userId: string) => {
-    return await ChatService.getDirectChats(userId);
-  };
-
-  const getGroupChats = async (userId: string) => {
-    return await ChatService.getGroupChats(userId);
-  };
-
-  const getChatMessages = async (chatId: string) => {
-    return await ChatService.getChatMessages(chatId);
-  };
-
-  const sendMessage = async (chatId: string, content: string, senderId: string) => {
-    return await ChatService.sendMessage(chatId, content, senderId);
-  };
-
-  const createChat = async (name: string, type: 'direct' | 'group', members: string[]) => {
-    return await ChatService.createChat(name, type, members);
-  };
-
-  const addMemberToChat = async (chatId: string, userId: string) => {
-    return await ChatService.addMemberToChat(chatId, userId);
-  };
-
-  const removeMemberFromChat = async (chatId: string, userId: string) => {
-    return await ChatService.removeMemberFromChat(chatId, userId);
-  };
-
-  return {
-    getChannels,
-    getDirectChats,
-    getGroupChats,
-    getChatMessages,
-    sendMessage,
-    createChat,
-    addMemberToChat,
-    removeMemberFromChat
-  };
-};

@@ -20,11 +20,13 @@ export interface UserProfile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  company_id: string;
+  company_id?: string;
   role: 'admin' | 'manager' | 'employee';
-  sector: string;
+  sector?: string;
   is_active: boolean;
   is_company_admin: boolean;
+  phone?: string;
+  last_login?: string;
 }
 
 export interface Task {
@@ -42,6 +44,11 @@ export interface Task {
   recurrence_pattern?: any;
   created_at: string;
   updated_at: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  parent_task_id?: string;
+  tags?: string[];
+  location?: string;
 }
 
 export interface Chat {
@@ -71,6 +78,11 @@ export interface Message {
   is_deleted: boolean;
   deleted_at?: string;
   created_at: string;
+  sender?: {
+    name: string;
+    email: string;
+    avatar_url?: string;
+  };
 }
 
 export interface Notification {

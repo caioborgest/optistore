@@ -9,10 +9,14 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   company: Company | null;
   loading: boolean;
+  isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (data: any) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  logout: () => Promise<void>;
+  registerCompany: (data: any) => Promise<void>;
+  registerWithInvite: (data: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +40,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
+
+  const isAuthenticated = !!user && !!userProfile;
 
   const loadCurrentUser = async () => {
     try {
@@ -154,6 +160,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const logout = signOut; // Alias para compatibilidade
+
   const updateProfile = async (updates: Partial<UserProfile>) => {
     try {
       const { userProfile, error } = await AuthService.updateProfile(updates);
@@ -181,15 +189,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const registerCompany = async (data: any) => {
+    // Implementação futura para registro de empresa
+    console.log('registerCompany não implementado ainda');
+  };
+
+  const registerWithInvite = async (data: any) => {
+    // Implementação futura para registro com convite
+    console.log('registerWithInvite não implementado ainda');
+  };
+
   const value = {
     user,
     userProfile,
     company,
     loading,
+    isAuthenticated,
     signIn,
     signUp,
     signOut,
-    updateProfile
+    logout,
+    updateProfile,
+    registerCompany,
+    registerWithInvite
   };
 
   return (
