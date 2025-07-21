@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,61 +9,92 @@ import {
   Plus,
   Calendar as CalendarIcon,
   Clock,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  type: 'task' | 'meeting' | 'training' | 'report';
+  sector: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status?: string;
+}
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { userProfile } = useAuth();
+  const { toast } = useToast();
 
-  // Mock data para demonstração
-  const events = [
-    {
-      id: 1,
-      title: 'Reunião de equipe',
-      date: '2024-01-15',
-      time: '09:00',
-      type: 'meeting',
-      sector: 'Geral',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      title: 'Conferir estoque',
-      date: '2024-01-15',
-      time: '10:30',
-      type: 'task',
-      sector: 'Estoque',
-      priority: 'medium'
-    },
-    {
-      id: 3,
-      title: 'Treinamento - Atendimento',
-      date: '2024-01-16',
-      time: '14:00',
-      type: 'training',
-      sector: 'Vendas',
-      priority: 'high'
-    },
-    {
-      id: 4,
-      title: 'Limpeza área externa',
-      date: '2024-01-17',
-      time: '08:00',
-      type: 'task',
-      sector: 'Limpeza',
-      priority: 'low'
-    },
-    {
-      id: 5,
-      title: 'Relatório mensal',
-      date: '2024-01-18',
-      time: '16:00',
-      type: 'report',
-      sector: 'Administração',
-      priority: 'medium'
+  // Carregar tarefas do Supabase
+  useEffect(() => {
+    loadCalendarEvents();
+  }, [currentDate, userProfile]);
+
+  const loadCalendarEvents = async () => {
+    if (!userProfile) return;
+
+    try {
+      setLoading(true);
+      
+      // Calcular range do mês atual
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      let query = supabase
+        .from('tasks')
+        .select('id, title, due_date, priority, sector, status')
+        .gte('due_date', startOfMonth.toISOString())
+        .lte('due_date', endOfMonth.toISOString());
+
+      // Filtrar baseado no papel do usuário
+      if (!userProfile.is_company_admin) {
+        query = query.eq('assigned_to', userProfile.id);
+      }
+
+      const { data: tasks, error } = await query.order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar tarefas:', error);
+        toast({
+          title: 'Erro ao carregar calendário',
+          description: 'Não foi possível carregar as tarefas do calendário',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Converter tarefas para eventos do calendário
+      const calendarEvents: CalendarEvent[] = tasks?.map(task => ({
+        id: task.id,
+        title: task.title,
+        date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
+        time: task.due_date ? new Date(task.due_date).toLocaleTimeString('pt-BR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }) : undefined,
+        type: 'task' as const,
+        sector: task.sector || 'Geral',
+        priority: task.priority || 'medium',
+        status: task.status
+      })) || [];
+
+      setEvents(calendarEvents);
+    } catch (error) {
+      console.error('Erro ao carregar eventos:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getEventColor = (type: string) => {
     switch (type) {
@@ -308,7 +339,15 @@ const Calendar = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Atividades Hoje</p>
-                <p className="text-3xl font-bold text-gray-900">8</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    events.filter(event => 
+                      event.date === new Date().toISOString().split('T')[0]
+                    ).length
+                  )}
+                </p>
               </div>
               <CalendarIcon className="h-12 w-12 text-blue-600" />
             </div>
@@ -320,7 +359,19 @@ const Calendar = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Esta Semana</p>
-                <p className="text-3xl font-bold text-gray-900">24</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    events.filter(event => {
+                      const eventDate = new Date(event.date);
+                      const today = new Date();
+                      const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+                      const weekEnd = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+                      return eventDate >= weekStart && eventDate <= weekEnd;
+                    }).length
+                  )}
+                </p>
               </div>
               <Clock className="h-12 w-12 text-green-600" />
             </div>
@@ -331,8 +382,14 @@ const Calendar = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600">Participantes</p>
-                <p className="text-3xl font-bold text-gray-900">12</p>
+                <p className="text-gray-600">Total do Mês</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    events.length
+                  )}
+                </p>
               </div>
               <Users className="h-12 w-12 text-purple-600" />
             </div>
