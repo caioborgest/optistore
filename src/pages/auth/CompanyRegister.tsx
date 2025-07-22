@@ -1,291 +1,269 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Building2, User, Mail, Lock, Phone, MapPin, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const CompanyRegister = () => {
-  const [adminName, setAdminName] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [companyEmail, setCompanyEmail] = useState('');
-  const [companyPhone, setCompanyPhone] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
+  const [formData, setFormData] = useState({
+    // Dados da empresa
+    companyName: '',
+    email: '',
+    phone: '',
+    address: '',
+    // Dados do administrador
+    adminName: '',
+    adminEmail: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [loading, setLoading] = useState(false);
-
-  const { toast } = useToast();
+  const [error, setError] = useState('');
+  const { registerCompany } = useAuth();
   const navigate = useNavigate();
 
-  const handleCompanyRegister = async (e: React.FormEvent) => {
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Validações básicas
-      if (adminPassword.length < 6) {
-        throw new Error('A senha deve ter pelo menos 6 caracteres');
-      }
+    setError('');
 
-      // Gerar código de convite único
-      const inviteCode = `${companyName.substring(0, 3).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-      // 1. Criar empresa primeiro (com email único baseado no timestamp se necessário)
-      let finalCompanyEmail = companyEmail;
-      let companyCreated = false;
-      let company;
-
-      // Tentar criar empresa, se email duplicado, adicionar timestamp
-      try {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .insert([{
-            name: companyName,
-            email: finalCompanyEmail,
-            phone: companyPhone,
-            address: companyAddress,
-            is_active: true,
-            invite_code: inviteCode,
-          }])
-          .select()
-          .single();
-
-        if (companyError) {
-          if (companyError.code === '23505' && companyError.message.includes('companies_email_key')) {
-            // Email duplicado, tentar com timestamp
-            finalCompanyEmail = `${companyEmail.split('@')[0]}_${Date.now()}@${companyEmail.split('@')[1]}`;
-            
-            const { data: retryCompanyData, error: retryError } = await supabase
-              .from('companies')
-              .insert([{
-                name: companyName,
-                email: finalCompanyEmail,
-                phone: companyPhone,
-                address: companyAddress,
-                is_active: true,
-                invite_code: inviteCode,
-              }])
-              .select()
-              .single();
-
-            if (retryError) {
-              throw new Error(retryError.message);
-            }
-            company = retryCompanyData;
-          } else {
-            throw new Error(companyError.message);
-          }
-        } else {
-          company = companyData;
-        }
-        companyCreated = true;
-      } catch (error: any) {
-        throw new Error(`Erro ao criar empresa: ${error.message}`);
-      }
-
-      // 2. Criar conta do administrador
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: adminEmail,
-        password: adminPassword,
-        options: {
-          data: {
-            name: adminName,
-          },
-        },
-      });
-
-      if (signUpError) {
-        // Se falhou, limpar empresa criada
-        if (companyCreated && company) {
-          await supabase.from('companies').delete().eq('id', company.id);
-        }
-        throw new Error(signUpError.message);
-      }
-
-      if (!authData.user) {
-        // Se falhou, limpar empresa criada
-        if (companyCreated && company) {
-          await supabase.from('companies').delete().eq('id', company.id);
-        }
-        throw new Error('Falha ao criar conta do administrador');
-      }
-
-      // 3. Criar perfil do usuário como admin da empresa
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          name: adminName,
-          email: adminEmail,
-          company_id: company.id,
-          is_company_admin: true,
-        }]);
-
-      if (profileError) {
-        // Se falhou, limpar empresa e usuário criados
-        if (companyCreated && company) {
-          await supabase.from('companies').delete().eq('id', company.id);
-        }
-        throw new Error(profileError.message);
-      }
-
-      toast({
-        title: 'Empresa registrada com sucesso!',
-        description: `Código de convite: ${inviteCode}`,
-        duration: 10000,
-      });
-      
-      // Fazer login automaticamente se possível
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: adminEmail,
-        password: adminPassword,
-      });
-
-      if (signInError) {
-        // Se não conseguir fazer login, redirecionar para página de login
-        navigate('/auth/login');
-      } else {
-        // Login bem-sucedido, redirecionar para dashboard
-        navigate('/');
-      }
-    } catch (error: any) {
-      console.error('Erro no registro:', error);
-      toast({
-        title: 'Erro no registro da empresa',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
+    if (formData.password !== formData.confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
     }
+
+    if (formData.password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+
+    const companyData = {
+      name: formData.companyName,
+      email: formData.email,
+      phone: formData.phone || '',
+      address: formData.address || '',
+      is_active: true,
+      invite_code: `${formData.companyName.toLowerCase().replace(/\s+/g, '')}-${Date.now()}`
+    };
+
+    const result = await registerCompany(companyData);
+    
+    if (result.error) {
+      setError(result.error);
+    } else {
+      navigate('/dashboard');
+    }
+    
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <span className="text-4xl font-bold">
-            <span className="text-green-500">Opti</span>
-            <span className="text-gray-800">Flow</span>
-          </span>
-        </div>
-
-        {/* Form Container */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">Criar conta</h2>
-          
-          <form onSubmit={handleCompanyRegister} className="space-y-4">
-            {/* Dados do Administrador */}
-            <div className="border-b border-gray-200 pb-4 mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Dados do Administrador</h3>
-              
-              <div className="space-y-3">
-                <Input
-                  id="adminName"
-                  type="text"
-                  required
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                  placeholder="Nome do administrador"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                <Input
-                  id="adminEmail"
-                  type="email"
-                  required
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="Email do administrador"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                <Input
-                  id="adminPassword"
-                  type="password"
-                  required
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Senha (mín. 6 caracteres)"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                <img 
+                  src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+                  alt="OptiFlow" 
+                  className="h-8 w-8"
                 />
               </div>
-            </div>
-
-            {/* Dados da Empresa */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Dados da Empresa</h3>
-              
-              <div className="space-y-3">
-                <Input
-                  id="companyName"
-                  type="text"
-                  required
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Nome da Empresa"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                <Input
-                  id="companyEmail"
-                  type="email"
-                  required
-                  value={companyEmail}
-                  onChange={(e) => setCompanyEmail(e.target.value)}
-                  placeholder="Email da Empresa"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                <Input
-                  id="companyPhone"
-                  type="tel"
-                  value={companyPhone}
-                  onChange={(e) => setCompanyPhone(e.target.value)}
-                  placeholder="Telefone"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                <Input
-                  id="companyAddress"
-                  type="text"
-                  value={companyAddress}
-                  onChange={(e) => setCompanyAddress(e.target.value)}
-                  placeholder="Endereço"
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  <span className="text-green-500">Opti</span>
+                  <span className="text-gray-800">Flow</span>
+                </h1>
+                <p className="text-sm text-gray-500">Sistema de Gestão</p>
               </div>
             </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium mt-6"
-              disabled={loading}
-            >
+          </div>
+          <CardTitle className="text-2xl font-bold">Registrar empresa</CardTitle>
+          <CardDescription>
+            Crie sua conta empresarial e comece a gerenciar sua equipe
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Dados da empresa */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Building2 className="mr-2 h-5 w-5" />
+                Dados da empresa
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Nome da empresa *</Label>
+                  <Input
+                    id="companyName"
+                    type="text"
+                    placeholder="Nome da sua empresa"
+                    value={formData.companyName}
+                    onChange={handleChange('companyName')}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email da empresa *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="contato@empresa.com"
+                      value={formData.email}
+                      onChange={handleChange('email')}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(11) 9999-9999"
+                      value={formData.phone}
+                      onChange={handleChange('phone')}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="address">Endereço</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="address"
+                      type="text"
+                      placeholder="Endereço da empresa"
+                      value={formData.address}
+                      onChange={handleChange('address')}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Dados do administrador */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <User className="mr-2 h-5 w-5" />
+                Dados do administrador
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Nome completo *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="adminName"
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={formData.adminName}
+                      onChange={handleChange('adminName')}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">Email pessoal *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={formData.adminEmail}
+                      onChange={handleChange('adminEmail')}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha *</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Mínimo 6 caracteres"
+                      value={formData.password}
+                      onChange={handleChange('password')}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmar senha *</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Confirme sua senha"
+                      value={formData.confirmPassword}
+                      onChange={handleChange('confirmPassword')}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Registrando...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registrando empresa...
                 </>
               ) : (
-                'Registrar Empresa'
+                'Registrar empresa'
               )}
             </Button>
           </form>
-
-          <div className="mt-8 text-center">
-            <Link 
-              to="/auth/login" 
-              className="text-gray-600 hover:text-gray-700 text-sm"
-            >
-              Voltar
+          
+          <div className="mt-6 text-center">
+            <Link to="/auth/login" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Voltar para login
             </Link>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

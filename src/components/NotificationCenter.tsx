@@ -1,156 +1,282 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { Bell, X, Check, Trash2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNotifications } from '@/hooks/useNotifications';
-import { 
-  Bell, 
-  CheckCircle, 
-  Clock, 
-  MessageSquare, 
-  AlertTriangle,
-  CheckCheck,
-  Trash2,
-  Loader2
-} from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { NotificationService } from '@/services/notificationService';
+import { Notification } from '@/types/database';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const NotificationCenter: React.FC = () => {
-  const {
-    notifications,
-    unreadCount,
-    loading,
-    markAsRead,
-    markAllAsRead
-  } = useNotifications();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'task_assigned':
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case 'task_due':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'task_overdue':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'task_completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'message':
-        return <MessageSquare className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await NotificationService.getNotifications();
+      
+      if (error) {
+        toast({
+          title: 'Erro ao carregar notificações',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Agora';
-    if (diffInMinutes < 60) return `${diffInMinutes}min atrás`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`;
-    return `${Math.floor(diffInMinutes / 1440)}d atrás`;
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await NotificationService.markAsRead(notificationId);
+      
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId 
+            ? { ...n, is_read: true, read_at: new Date().toISOString() }
+            : n
+        )
+      );
+    } catch (error) {
+      console.error('Erro ao marcar como lida:', error);
+    }
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      const { error } = await NotificationService.deleteNotification(notificationId);
+      
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      toast({
+        title: 'Notificação removida',
+        description: 'A notificação foi removida com sucesso'
+      });
+    } catch (error) {
+      console.error('Erro ao deletar notificação:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const { error } = await NotificationService.markAllAsRead();
+      
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+      );
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Todas as notificações foram marcadas como lidas'
+      });
+    } catch (error) {
+      console.error('Erro ao marcar todas como lidas:', error);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const getNotificationIcon = (type: Notification['type']) => {
+    switch (type) {
+      case 'task_assigned':
+        return '📋';
+      case 'task_completed':
+        return '✅';
+      case 'task_overdue':
+        return '⚠️';
+      case 'chat_message':
+        return '💬';
+      case 'system':
+        return '⚙️';
+      case 'reminder':
+        return '🔔';
+      default:
+        return '📢';
+    }
+  };
+
+  const getNotificationColor = (type: Notification['type']) => {
+    switch (type) {
+      case 'task_assigned':
+        return 'bg-blue-50 border-blue-200';
+      case 'task_completed':
+        return 'bg-green-50 border-green-200';
+      case 'task_overdue':
+        return 'bg-red-50 border-red-200';
+      case 'chat_message':
+        return 'bg-purple-50 border-purple-200';
+      case 'system':
+        return 'bg-gray-50 border-gray-200';
+      case 'reminder':
+        return 'bg-yellow-50 border-yellow-200';
+      default:
+        return 'bg-gray-50 border-gray-200';
+    }
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="h-6 px-2 text-xs"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Marcar todas como lidas
-            </Button>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+      </SheetTrigger>
+      
+      <SheetContent className="w-full sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notificações
+            </span>
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={markAllAsRead}
+                className="text-xs"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Marcar todas como lidas
+              </Button>
+            )}
+          </SheetTitle>
+        </SheetHeader>
         
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-8">
-            <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Nenhuma notificação</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-96">
-            <div className="space-y-1">
-              {notifications.slice(0, 10).map((notification) => (
-                <DropdownMenuItem
-                  key={notification.id}
-                  className={`flex items-start gap-3 p-3 cursor-pointer ${
-                    !notification.is_read ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
-                >
-                  <div className="mt-1">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${
-                          !notification.is_read ? 'text-gray-900' : 'text-gray-700'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        {notification.content && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                            {notification.content}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          {formatTimeAgo(notification.created_at)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        {!notification.is_read && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
+        <Separator className="my-4" />
+        
+        <ScrollArea className="h-full pr-4">
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-16 bg-gray-200 rounded-lg"></div>
+                </div>
               ))}
             </div>
-          </ScrollArea>
-        )}
-        
-        {notifications.length > 10 && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-center text-sm text-blue-600 cursor-pointer">
-              Ver todas as notificações
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Nenhuma notificação</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <Card 
+                  key={notification.id} 
+                  className={`transition-all hover:shadow-md ${
+                    !notification.is_read 
+                      ? `${getNotificationColor(notification.type)} border-l-4` 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">
+                            {getNotificationIcon(notification.type)}
+                          </span>
+                          <h4 className="font-medium text-sm truncate">
+                            {notification.title}
+                          </h4>
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDistanceToNow(new Date(notification.created_at), {
+                            addSuffix: true,
+                            locale: ptBR
+                          })}
+                        </p>
+                      </div>
+                      
+                      <div className="flex gap-1">
+                        {!notification.is_read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notification.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteNotification(notification.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
   );
 };
