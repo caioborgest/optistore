@@ -1,32 +1,39 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Company } from '@/types/database';
 
-export interface CompanyStats {
-  totalUsers: number;
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+export interface Company {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  invite_code: string;
+  logo_url?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export const CompanyService = {
-  async updateCompany(companyId: string, updates: Partial<Company>) {
+export const useCompany = () => {
+  const updateCompany = async (companyId: string, data: Partial<Company>) => {
     try {
-      const { data, error } = await supabase
+      const { data: updatedCompany, error } = await supabase
         .from('companies')
-        .update(updates)
+        .update(data)
         .eq('id', companyId)
         .select()
         .single();
 
-      return { data, error };
+      return { company: updatedCompany, error };
     } catch (error: any) {
-      return { data: null, error };
+      return { company: null, error };
     }
-  },
+  };
 
-  async regenerateInviteCode(companyId: string) {
+  const regenerateInviteCode = async (companyId: string) => {
     try {
-      const newInviteCode = Math.random().toString(36).substring(2, 15);
+      const newInviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       
       const { data, error } = await supabase
         .from('companies')
@@ -35,27 +42,26 @@ export const CompanyService = {
         .select()
         .single();
 
-      return { inviteCode: newInviteCode, data, error };
+      return { inviteCode: newInviteCode, error };
     } catch (error: any) {
-      return { inviteCode: null, data: null, error };
+      return { inviteCode: null, error };
     }
-  },
+  };
 
-  async getCompanyUsers(companyId: string) {
+  const getCompanyUsers = async (companyId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .eq('company_id', companyId);
 
       return { users: data, error };
     } catch (error: any) {
       return { users: null, error };
     }
-  },
+  };
 
-  async removeUserFromCompany(userId: string) {
+  const removeUserFromCompany = async (userId: string) => {
     try {
       const { error } = await supabase
         .from('users')
@@ -66,80 +72,50 @@ export const CompanyService = {
     } catch (error: any) {
       return { error };
     }
-  },
+  };
 
-  async getCompanyStats(companyId: string): Promise<{ stats: CompanyStats | null; error: any }> {
+  const getCompanyStats = async (companyId: string) => {
     try {
-      // Buscar total de usuários
-      const { count: totalUsers, error: usersError } = await supabase
+      // Get user count
+      const { count: totalUsers } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId);
 
-      if (usersError) {
-        return { stats: null, error: usersError };
-      }
-
-      // Buscar usuários para pegar suas tarefas
-      const { data: users, error: userDataError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('company_id', companyId);
-
-      if (userDataError) {
-        return { stats: null, error: userDataError };
-      }
-
-      const userIds = users?.map(user => user.id) || [];
-
-      if (userIds.length === 0) {
-        return {
-          stats: {
-            totalUsers: totalUsers || 0,
-            totalTasks: 0,
-            completedTasks: 0,
-            pendingTasks: 0
-          },
-          error: null
-        };
-      }
-
-      // Buscar tarefas dos usuários da empresa
-      const { data: tasks, error: tasksError } = await supabase
+      // Get task counts
+      const { count: totalTasks } = await supabase
         .from('tasks')
-        .select('status')
-        .in('assigned_to', userIds);
+        .select('*', { count: 'exact', head: true });
 
-      if (tasksError) {
-        return { stats: null, error: tasksError };
-      }
+      const { count: completedTasks } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed');
 
-      const totalTasks = tasks?.length || 0;
-      const completedTasks = tasks?.filter(task => task.status === 'completed').length || 0;
-      const pendingTasks = tasks?.filter(task => task.status === 'pending').length || 0;
+      const { count: pendingTasks } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
 
       return {
         stats: {
           totalUsers: totalUsers || 0,
-          totalTasks,
-          completedTasks,
-          pendingTasks
+          totalTasks: totalTasks || 0,
+          completedTasks: completedTasks || 0,
+          pendingTasks: pendingTasks || 0
         },
         error: null
       };
     } catch (error: any) {
       return { stats: null, error };
     }
-  }
-};
+  };
 
-// Hook personalizado para usar o CompanyService
-export const useCompany = () => {
   return {
-    updateCompany: CompanyService.updateCompany,
-    regenerateInviteCode: CompanyService.regenerateInviteCode,
-    getCompanyUsers: CompanyService.getCompanyUsers,
-    removeUserFromCompany: CompanyService.removeUserFromCompany,
-    getCompanyStats: CompanyService.getCompanyStats
+    updateCompany,
+    regenerateInviteCode,
+    getCompanyUsers,
+    removeUserFromCompany,
+    getCompanyStats
   };
 };

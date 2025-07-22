@@ -107,21 +107,25 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   const SidebarContent = () => (
     <>
       {/* Header with Logo */}
-      <div className="p-4 lg:p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-              <span className="text-white font-bold text-lg">O</span>
+            <div className="flex items-center justify-center w-12 h-12 gradient-primary rounded-2xl shadow-elegant animate-pulse-glow">
+              <img 
+                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
+                alt="OptiFlow" 
+                className="h-8 w-8"
+              />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                <span className="text-green-500">Opti</span>
-                <span className="text-gray-800">Flow</span>
+              <h1 className="text-xl font-bold">
+                <span className="text-primary">Opti</span>
+                <span className="text-foreground">Flow</span>
               </h1>
-              <p className="text-xs text-gray-500">Sistema de Gestão</p>
+              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
             </div>
           </div>
-          <div className="text-gray-600">
+          <div className="text-muted-foreground">
             <NotificationCenter />
           </div>
         </div>
@@ -129,22 +133,23 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => (
+        {menuItems.map((item, index) => (
           <NavLink
             key={item.path}
             to={item.path}
             onClick={() => isMobile && setIsOpen(false)}
             className={({ isActive }) =>
-              `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+              `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group animate-fade-in ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'gradient-primary text-primary-foreground shadow-lg'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }`
             }
+            style={{ animationDelay: `${index * 0.05}s` }}
           >
             {({ isActive }) => (
               <>
-                <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <item.icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-accent-foreground'}`} />
                 <span className="font-medium">{item.label}</span>
               </>
             )}
@@ -153,26 +158,26 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
       </nav>
 
       {/* User Profile Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center space-x-3 mb-3">
-          <Avatar className="h-10 w-10 ring-2 ring-gray-200">
+      <div className="p-4 border-t border-border bg-muted/20">
+        <div className="flex items-center space-x-3 mb-4">
+          <Avatar className="h-12 w-12 ring-2 ring-primary/20">
             <AvatarImage src={userProfile.avatar_url} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+            <AvatarFallback className="gradient-primary text-primary-foreground font-semibold text-lg">
               {userProfile.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 truncate text-sm">
+            <p className="font-semibold text-card-foreground truncate">
               {userProfile.name}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {userProfile.email}
             </p>
           </div>
         </div>
         
         <div className="flex items-center justify-between">
-          <Badge className={`text-xs border ${getRoleColor(userProfile.is_company_admin)}`} variant="outline">
+          <Badge className={`text-xs font-medium ${getRoleColor(userProfile.is_company_admin)}`} variant="outline">
             <span className="flex items-center gap-1.5">
               {getRoleIcon(userProfile.is_company_admin)}
               {getRoleLabel(userProfile.is_company_admin)}
@@ -182,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors p-2"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors p-2 rounded-lg"
             onClick={logout}
             title="Sair"
           >
@@ -206,7 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
         )}
         {/* Mobile Sidebar */}
         <div className={cn(
-          "fixed left-0 top-0 h-full w-80 bg-white shadow-xl border-r border-gray-200 flex flex-col z-50 lg:hidden transition-transform duration-300",
+          "fixed left-0 top-0 h-full w-80 bg-card shadow-2xl border-r border-border flex flex-col z-50 lg:hidden transition-transform duration-300 animate-slide-in",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}>
           <SidebarContent />
@@ -216,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   }
 
   return (
-    <div className="w-72 bg-white shadow-xl border-r border-gray-200 flex flex-col">
+    <div className="w-72 bg-card shadow-2xl border-r border-border flex flex-col">
       <SidebarContent />
     </div>
   );
