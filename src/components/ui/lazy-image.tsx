@@ -104,7 +104,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   return (
     <div 
       className={`lazy-image-container relative overflow-hidden ${className}`}
-      style={{ aspectRatio }}
+      style={{ aspectRatio } as React.CSSProperties}
     >
       <motion.img
         ref={imgRef}

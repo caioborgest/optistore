@@ -203,11 +203,16 @@ export const TestAdvancedFeatures: React.FC = () => {
                   value={colors.primary}
                   onChange={(e) => setColors({ primary: e.target.value })}
                   className="w-12 h-10 rounded border"
+                  aria-label="Seletor de cor primária para teste"
+                  title="Altere a cor primária para testar o sistema de temas"
                 />
                 <span>Cor Primária</span>
               </div>
               
-              <div className="p-4 rounded-lg border" style={{ backgroundColor: colors.primary, color: 'white' }}>
+              <div 
+                className="p-4 rounded-lg border color-preview" 
+                style={{ '--preview-color': colors.primary } as React.CSSProperties}
+              >
                 Prévia da cor primária
               </div>
             </CardContent>

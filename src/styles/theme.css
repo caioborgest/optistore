@@ -137,3 +137,78 @@ body {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+/
+* Utility classes for dynamic styling */
+.color-preview {
+  background-color: var(--preview-color);
+  color: white;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Virtual list specific styles */
+.virtual-list-container {
+  overflow: auto;
+}
+
+.virtual-list-content {
+  position: relative;
+}
+
+.virtual-list-items {
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.virtual-list-item {
+  /* Height will be set dynamically */
+}
+
+/* Lazy image container */
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Progress indicators */
+.progress-bar {
+  width: var(--progress-width, 0%);
+}
+
+.progress-circle {
+  stroke-dasharray: var(--progress-circumference, 283);
+  stroke-dashoffset: var(--progress-offset, 283);
+}
+
+/* Color swatches */
+.color-swatch {
+  background-color: var(--swatch-color);
+}
+
+/* Development status indicators */
+.status-indicator {
+  background-color: var(--status-color);
+}
+
+.feature-progress {
+  width: var(--feature-progress, 0%);
+}

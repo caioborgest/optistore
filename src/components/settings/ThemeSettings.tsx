@@ -101,6 +101,8 @@ export const ThemeSettings: React.FC = () => {
                     value={colors.primary}
                     onChange={(e) => setColors({ primary: e.target.value })}
                     className="w-12 h-10 rounded-md border border-input cursor-pointer"
+                    aria-label="Seletor de cor primária"
+                    title="Selecione a cor primária da interface"
                   />
                   <div className="flex-1">
                     <div className="text-sm font-medium">{colors.primary.toUpperCase()}</div>
@@ -117,6 +119,8 @@ export const ThemeSettings: React.FC = () => {
                     value={colors.success}
                     onChange={(e) => setColors({ success: e.target.value })}
                     className="w-12 h-10 rounded-md border border-input cursor-pointer"
+                    aria-label="Seletor de cor de sucesso"
+                    title="Selecione a cor para ações positivas"
                   />
                   <div className="flex-1">
                     <div className="text-sm font-medium">{colors.success.toUpperCase()}</div>
@@ -164,8 +168,8 @@ export const ThemeSettings: React.FC = () => {
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-3 mb-3">
                 <div 
-                  className="w-8 h-8 rounded-full"
-                  style={{ backgroundColor: colors.primary }}
+                  className="w-8 h-8 rounded-full color-swatch"
+                  style={{ '--swatch-color': colors.primary } as React.CSSProperties}
                 />
                 <div>
                   <div className="font-medium">Elemento Primário</div>
@@ -174,8 +178,8 @@ export const ThemeSettings: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-8 h-8 rounded-full"
-                  style={{ backgroundColor: colors.success }}
+                  className="w-8 h-8 rounded-full color-swatch"
+                  style={{ '--swatch-color': colors.success } as React.CSSProperties}
                 />
                 <div>
                   <div className="font-medium">Elemento de Sucesso</div>

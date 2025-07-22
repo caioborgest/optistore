@@ -96,13 +96,13 @@ export function VirtualList<T>({
     <div
       ref={containerRef}
       className={`virtual-list-container overflow-auto ${className}`}
-      style={{ height }}
+      style={{ height } as React.CSSProperties}
       role="list"
       aria-label={`Lista virtual com ${items.length} itens`}
     >
       <div 
         className="virtual-list-content relative"
-        style={{ height: totalHeight }}
+        style={{ height: totalHeight } as React.CSSProperties}
       >
         <div 
           className="virtual-list-items"
@@ -110,7 +110,7 @@ export function VirtualList<T>({
             position: 'absolute', 
             top: offsetY, 
             width: '100%' 
-          }}
+          } as React.CSSProperties}
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
@@ -118,7 +118,7 @@ export function VirtualList<T>({
               <div
                 key={actualIndex}
                 className="virtual-list-item"
-                style={{ height: getItemHeight(actualIndex) }}
+                style={{ height: getItemHeight(actualIndex) } as React.CSSProperties}
                 role="listitem"
               >
                 {renderItem(item, actualIndex)}

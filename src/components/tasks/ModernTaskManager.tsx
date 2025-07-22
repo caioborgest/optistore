@@ -127,10 +127,17 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
+      // Validar se o status é válido
+      const validStatuses = ['pending', 'in_progress', 'completed', 'overdue', 'cancelled'];
+      if (!validStatuses.includes(newStatus)) {
+        console.error('Status inválido:', newStatus);
+        return;
+      }
+
       const { error } = await supabase
         .from('tasks')
         .update({ 
-          status: newStatus,
+          status: newStatus as 'pending' | 'in_progress' | 'completed' | 'overdue' | 'cancelled',
           completed_at: newStatus === 'completed' ? new Date().toISOString() : null
         })
         .eq('id', taskId);
@@ -240,7 +247,7 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
   const renderListView = () => (
     <div className="space-y-4">
       {filteredTasks.map((task, index) => (
-        <Card key={task.id} className={cn("modern-card hover-lift animate-slide-up")} style={{ animationDelay: `${index * 50}ms` }}>
+        <Card key={task.id} className={cn("modern-card hover-lift animate-slide-up", `animation-delay-${Math.min(index * 50, 500)}`)}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
@@ -289,7 +296,7 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
         <p className="text-gray-600">Organize e acompanhe suas atividades</p>
       </div>
       
-      <div className="flex items-center gap-3 animate-slide-right" style={{ animationDelay: '200ms' }}>
+      <div className="flex items-center gap-3 animate-slide-right animation-delay-200">
         <Button onClick={onCreateTask} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover-lift">
           <Plus className="h-4 w-4 mr-2" />
           Nova Tarefa
@@ -387,28 +394,28 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
           </CardContent>
         </Card>
         
-        <Card className="modern-card hover-lift animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <Card className="modern-card hover-lift animate-slide-up animation-delay-100">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             <div className="text-sm text-gray-600">Pendentes</div>
           </CardContent>
         </Card>
         
-        <Card className="modern-card hover-lift animate-slide-up" style={{ animationDelay: '200ms' }}>
+        <Card className="modern-card hover-lift animate-slide-up animation-delay-200">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
             <div className="text-sm text-gray-600">Em Progresso</div>
           </CardContent>
         </Card>
         
-        <Card className="modern-card hover-lift animate-slide-up" style={{ animationDelay: '300ms' }}>
+        <Card className="modern-card hover-lift animate-slide-up animation-delay-300">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
             <div className="text-sm text-gray-600">Concluídas</div>
           </CardContent>
         </Card>
         
-        <Card className="modern-card hover-lift animate-slide-up" style={{ animationDelay: '400ms' }}>
+        <Card className="modern-card hover-lift animate-slide-up animation-delay-400">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
             <div className="text-sm text-gray-600">Atrasadas</div>
@@ -435,7 +442,7 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
       {renderStats()}
       {renderFilters()}
       
-      <div className="animate-fade-scale" style={{ animationDelay: '300ms' }}>
+      <div className="animate-fade-scale animation-delay-300">
         {viewMode === 'kanban' ? renderKanbanView() : renderListView()}
       </div>
       
