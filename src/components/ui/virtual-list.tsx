@@ -1,4 +1,31 @@
-import React, { useEffect, useRef, useState, useMemo, ReactNode } from 'react';
+import React, { useEffect, useRef, useState, useMemo, ReactNode } from "react";
+
+// Helper component for virtual list items
+interface VirtualListItemProps {
+  height: number;
+  children: ReactNode;
+  role?: string;
+}
+
+const VirtualListItem: React.FC<VirtualListItemProps> = ({ height, children, role }) => {
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (itemRef.current) {
+      itemRef.current.style.height = `${height}px`;
+    }
+  }, [height]);
+
+  return (
+    <div
+      ref={itemRef}
+      className="virtual-list-item"
+      role={role}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface VirtualListProps<T> {
   items: T[];
@@ -16,20 +43,22 @@ export function VirtualList<T>({
   itemHeight,
   renderItem,
   overscan = 5,
-  className = '',
+  className = "",
   onScroll,
 }: VirtualListProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
 
   const getItemHeight = (index: number): number => {
-    return typeof itemHeight === 'function' ? itemHeight(index) : itemHeight;
+    return typeof itemHeight === "function" ? itemHeight(index) : itemHeight;
   };
 
   const { totalHeight, startIndex, endIndex, offsetY } = useMemo(() => {
     let totalHeight = 0;
     const itemHeights: number[] = [];
-    
+
     // Calculate total height and individual item heights
     for (let i = 0; i < items.length; i++) {
       const height = getItemHeight(i);
@@ -61,7 +90,10 @@ export function VirtualList<T>({
     // Find end index
     currentHeight = offsetY;
     for (let i = startIndex; i < items.length; i++) {
-      if (currentHeight > scrollTop + height + (overscan * (itemHeights[i] || 50))) {
+      if (
+        currentHeight >
+        scrollTop + height + overscan * (itemHeights[i] || 50)
+      ) {
         endIndex = i;
         break;
       }
@@ -74,6 +106,19 @@ export function VirtualList<T>({
     return { totalHeight, startIndex, endIndex, offsetY };
   }, [items, scrollTop, height, itemHeight, overscan]);
 
+  // Apply dynamic styles using refs
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.style.height = `${height}px`;
+    }
+    if (contentRef.current) {
+      contentRef.current.style.height = `${totalHeight}px`;
+    }
+    if (itemsRef.current) {
+      itemsRef.current.style.top = `${offsetY}px`;
+    }
+  }, [height, totalHeight, offsetY]);
+
   useEffect(() => {
     const handleScroll = () => {
       if (containerRef.current) {
@@ -85,8 +130,8 @@ export function VirtualList<T>({
 
     const container = containerRef.current;
     if (container) {
-      container.addEventListener('scroll', handleScroll, { passive: true });
-      return () => container.removeEventListener('scroll', handleScroll);
+      container.addEventListener("scroll", handleScroll, { passive: true });
+      return () => container.removeEventListener("scroll", handleScroll);
     }
   }, [onScroll]);
 
@@ -96,33 +141,27 @@ export function VirtualList<T>({
     <div
       ref={containerRef}
       className={`virtual-list-container overflow-auto ${className}`}
-      style={{ height } as React.CSSProperties}
       role="list"
       aria-label={`Lista virtual com ${items.length} itens`}
     >
-      <div 
+      <div
+        ref={contentRef}
         className="virtual-list-content relative"
-        style={{ height: totalHeight } as React.CSSProperties}
       >
-        <div 
+        <div
+          ref={itemsRef}
           className="virtual-list-items"
-          style={{ 
-            position: 'absolute', 
-            top: offsetY, 
-            width: '100%' 
-          } as React.CSSProperties}
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
             return (
-              <div
+              <VirtualListItem
                 key={actualIndex}
-                className="virtual-list-item"
-                style={{ height: getItemHeight(actualIndex) } as React.CSSProperties}
+                height={getItemHeight(actualIndex)}
                 role="listitem"
               >
                 {renderItem(item, actualIndex)}
-              </div>
+              </VirtualListItem>
             );
           })}
         </div>
@@ -139,10 +178,12 @@ export function useVirtualScroll<T>(
   overscan: number = 5
 ) {
   const [scrollTop, setScrollTop] = useState(0);
-  const [itemHeights, setItemHeights] = useState<Map<number, number>>(new Map());
+  const [itemHeights, setItemHeights] = useState<Map<number, number>>(
+    new Map()
+  );
 
   const setItemHeight = (index: number, height: number) => {
-    setItemHeights(prev => {
+    setItemHeights((prev) => {
       const newMap = new Map(prev);
       newMap.set(index, height);
       return newMap;
@@ -180,7 +221,10 @@ export function useVirtualScroll<T>(
     currentY = offsetY;
     for (let i = startIndex; i < items.length; i++) {
       const height = getItemHeight(i);
-      if (currentY > scrollTop + containerHeight + (overscan * estimatedItemHeight)) {
+      if (
+        currentY >
+        scrollTop + containerHeight + overscan * estimatedItemHeight
+      ) {
         endIndex = i;
         break;
       }
@@ -200,7 +244,14 @@ export function useVirtualScroll<T>(
       totalHeight,
       offsetY,
     };
-  }, [items, scrollTop, containerHeight, itemHeights, overscan, estimatedItemHeight]);
+  }, [
+    items,
+    scrollTop,
+    containerHeight,
+    itemHeights,
+    overscan,
+    estimatedItemHeight,
+  ]);
 
   return {
     visibleRange,

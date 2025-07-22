@@ -299,4 +299,10 @@
 .animation-delay-350 { animation-delay: 350ms; }
 .animation-delay-400 { animation-delay: 400ms; }
 .animation-delay-450 { animation-delay: 450ms; }
-.animation-delay-500 { animation-delay: 500ms; }
+.animation-delay-500 { animation-delay: 500ms; }/* Additi
+onal animation delay classes for dashboard */
+.animation-delay-600 { animation-delay: 600ms; }
+.animation-delay-700 { animation-delay: 700ms; }
+.animation-delay-800 { animation-delay: 800ms; }
+.animation-delay-900 { animation-delay: 900ms; }
+.animation-delay-1000 { animation-delay: 1000ms; }
