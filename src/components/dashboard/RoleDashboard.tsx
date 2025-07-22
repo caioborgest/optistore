@@ -300,40 +300,43 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
   const dashboardData = getDashboardData();
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 pb-20 lg:pb-6">
+    <div className="p-6 space-y-6 pb-20 lg:pb-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+        <div className="space-y-2">
+          <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {dashboardData.title}
           </h1>
-          <p className="text-gray-600 text-sm lg:text-base">
-            Bem-vindo, {userProfile.name}!
+          <p className="text-muted-foreground text-lg">
+            Bem-vindo, {userProfile.name}! 👋
           </p>
         </div>
-        <Button className="flex items-center gap-2 w-full lg:w-auto">
-          <PlusCircle className="h-4 w-4" />
+        <Button 
+          className="gradient-primary text-primary-foreground hover-lift shadow-lg font-semibold h-12 px-6"
+          onClick={() => handleQuickAction("new-task")}
+        >
+          <PlusCircle className="h-5 w-5 mr-2" />
           Nova Tarefa
         </Button>
       </div>
 
       {/* Cards de estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {dashboardData.cards.map((card, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-0">
+          <Card key={index} className="card-modern hover-lift animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-xs lg:text-sm text-gray-600 mb-1">
+                  <p className="text-sm text-muted-foreground mb-2 font-medium">
                     {card.title}
                   </p>
-                  <p className="text-xl lg:text-3xl font-bold text-gray-900">
+                  <p className="text-2xl lg:text-3xl font-bold text-card-foreground">
                     {card.value}
                   </p>
                 </div>
-                <card.icon
-                  className={`h-8 w-8 lg:h-12 lg:w-12 ${card.color} self-end lg:self-auto`}
-                />
+                <div className={`p-3 rounded-xl ${card.color} bg-opacity-10 self-end lg:self-auto`}>
+                  <card.icon className={`h-6 w-6 lg:h-8 lg:w-8 ${card.color}`} />
+                </div>
               </div>
             </CardContent>
           </Card>

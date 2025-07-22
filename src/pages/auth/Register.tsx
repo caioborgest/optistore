@@ -47,12 +47,12 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
+    <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+      <Card className="w-full max-w-md card-modern hover-lift animate-fade-in">
+        <CardHeader className="text-center space-y-6">
           <div className="flex justify-center">
             <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+              <div className="flex items-center justify-center w-14 h-14 gradient-primary rounded-2xl shadow-elegant animate-bounce-gentle">
                 <img 
                   src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
                   alt="OptiFlow" 
@@ -60,95 +60,103 @@ const Register = () => {
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  <span className="text-green-500">Opti</span>
-                  <span className="text-gray-800">Flow</span>
+                <h1 className="text-3xl font-bold">
+                  <span className="text-primary">Opti</span>
+                  <span className="text-foreground">Flow</span>
                 </h1>
-                <p className="text-sm text-gray-500">Sistema de Gestão</p>
+                <p className="text-sm text-muted-foreground">Sistema de Gestão</p>
               </div>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Criar nova conta</CardTitle>
-          <CardDescription>
-            Preencha os dados abaixo para criar sua conta
-          </CardDescription>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Criar nova conta
+            </CardTitle>
+            <CardDescription className="text-base">
+              Preencha os dados abaixo para criar sua conta
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="animate-fade-in">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Label htmlFor="name" className="text-sm font-medium">Nome completo</Label>
+              <div className="relative group">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="name"
                   type="text"
                   placeholder="Seu nome completo"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 transition-all duration-200 border-2 focus:border-primary"
                   required
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 transition-all duration-200 border-2 focus:border-primary"
                   required
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="Mínimo 6 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 transition-all duration-200 border-2 focus:border-primary"
                   required
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar senha</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar senha</Label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   id="confirmPassword"
                   type="password"
                   placeholder="Confirme sua senha"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 transition-all duration-200 border-2 focus:border-primary"
                   required
                 />
               </div>
             </div>
             
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full h-12 gradient-primary text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Criando conta...
                 </>
               ) : (
@@ -157,8 +165,11 @@ const Register = () => {
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <Link to="/auth/login" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500">
+          <div className="text-center">
+            <Link 
+              to="/auth/login" 
+              className="inline-flex items-center text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+            >
               <ArrowLeft className="mr-1 h-4 w-4" />
               Voltar para login
             </Link>
