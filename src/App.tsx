@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
@@ -22,8 +22,6 @@ import CompanyPage from '@/pages/CompanyPage';
 import UsersPage from '@/pages/UsersPage';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import './App.css';
-
-const queryClient = new QueryClient();
 
 function AppContent() {
   const { showNotification } = usePWA();
@@ -72,6 +70,15 @@ function AppContent() {
 }
 
 function App() {
+  const queryClient = useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 10, // 10 minutes
+      },
+    },
+  }), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
