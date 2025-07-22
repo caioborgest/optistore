@@ -17,20 +17,23 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  role: 'gerente' | 'supervisor' | 'colaborador';
+  sector?: string;
+  phone?: string;
   avatar_url?: string;
+  is_active: boolean;
+  is_company_admin: boolean;
+  company_id?: string;
+  last_login?: string;
   created_at: string;
   updated_at: string;
-  company_id?: string;
-  is_company_admin: boolean;
-  // Note: role and is_active are not in the actual database schema
-  // They need to be added to the database or handled differently
 }
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   sector: string;
   assigned_to?: string;

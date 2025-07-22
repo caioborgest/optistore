@@ -1,101 +1,152 @@
-
 import { useState, useEffect } from 'react';
-import { useMockNotifications } from '@/services/mockNotificationService';
-import { Notification } from '@/types/database';
+import { NotificationService } from '@/services/notificationService';
+import type { Notification } from '@/types/database';
+import { useAuth } from './useAuth';
 
-export const useNotifications = (userId?: string) => {
+export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const {
-    getNotifications,
-    markAsRead,
-    markAllAsRead,
-    createNotification
-  } = useMockNotifications();
-
-  const loadNotifications = async () => {
-    if (!userId) return;
-
+  const fetchNotifications = async () => {
     setLoading(true);
-    setError(null);
+    const { data, error } = await NotificationService.getNotifications();
+    
+    if (error) {
+      setError(error.message);
+    } else {
+      setNotifications(data || []);
+    }
+    
+    setLoading(false);
+  };
 
-    try {
-      const { notifications: data, error } = await getNotifications(userId);
-      if (error) {
-        setError(error.message);
-      } else {
-        setNotifications(data || []);
-      }
-    } catch (err) {
-      setError('Erro ao carregar notificações');
-    } finally {
-      setLoading(false);
+  const fetchUnreadCount = async () => {
+    const { count, error } = await NotificationService.getUnreadCount();
+    
+    if (!error) {
+      setUnreadCount(count);
     }
   };
 
-  const handleMarkAsRead = async (notificationId: string) => {
-    try {
-      const { error } = await markAsRead(notificationId);
-      if (!error) {
-        setNotifications(prev => 
-          prev.map(n => 
-            n.id === notificationId 
-              ? { ...n, is_read: true, read_at: new Date().toISOString() }
-              : n
-          )
-        );
+  const markAsRead = async (notificationId: string) => {
+    const { error } = await NotificationService.markAsRead(notificationId);
+    
+    if (!error) {
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true, read_at: new Date().toISOString() }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+    
+    return { error };
+  };
+
+  const markAllAsRead = async () => {
+    const { error } = await NotificationService.markAllAsRead();
+    
+    if (!error) {
+      setNotifications(prev => 
+        prev.map(notification => ({ 
+          ...notification, 
+          is_read: true, 
+          read_at: new Date().toISOString() 
+        }))
+      );
+      setUnreadCount(0);
+    }
+    
+    return { error };
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    const { error } = await NotificationService.deleteNotification(notificationId);
+    
+    if (!error) {
+      const wasUnread = notifications.find(n => n.id === notificationId && !n.is_read);
+      setNotifications(prev => 
+        prev.filter(notification => notification.id !== notificationId)
+      );
+      if (wasUnread) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
       }
-    } catch (err) {
-      console.error('Erro ao marcar como lida:', err);
+    }
+    
+    return { error };
+  };
+
+  const addNotification = (notification: Notification) => {
+    setNotifications(prev => [notification, ...prev]);
+    if (!notification.is_read) {
+      setUnreadCount(prev => prev + 1);
     }
   };
 
-  const handleMarkAllAsRead = async () => {
-    if (!userId) return;
-
-    try {
-      const { error } = await markAllAsRead(userId);
-      if (!error) {
-        setNotifications(prev => 
-          prev.map(n => ({ 
-            ...n, 
-            is_read: true, 
-            read_at: new Date().toISOString() 
-          }))
-        );
-      }
-    } catch (err) {
-      console.error('Erro ao marcar todas como lidas:', err);
+  const createNotification = async (data: Omit<Notification, 'id' | 'created_at'>) => {
+    const { data: notification, error } = await NotificationService.createNotification(data);
+    
+    if (!error && notification) {
+      addNotification(notification);
     }
+    
+    return { data: notification, error };
   };
 
-  const handleCreateNotification = async (data: Omit<Notification, 'id' | 'created_at'>) => {
-    try {
-      const { notification, error } = await createNotification(data);
-      if (!error && notification) {
-        setNotifications(prev => [notification, ...prev]);
+  useEffect(() => {
+    fetchNotifications();
+    fetchUnreadCount();
+  }, []);
+
+  // Subscrever a notificações em tempo real
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const unsubscribe = NotificationService.subscribeToNotifications(
+      user.id,
+      (notification) => {
+        addNotification(notification);
+        
+        // Mostrar notificação do navegador se permitido
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(notification.title, {
+            body: notification.content,
+            icon: '/icon-192x192.png'
+          });
+        }
       }
-    } catch (err) {
-      console.error('Erro ao criar notificação:', err);
+    );
+
+    return unsubscribe;
+  }, [user?.id]);
+
+  // Solicitar permissão para notificações
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
     }
   };
 
   useEffect(() => {
-    loadNotifications();
-  }, [userId]);
-
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+    requestNotificationPermission();
+  }, []);
 
   return {
     notifications,
+    unreadCount,
     loading,
     error,
-    unreadCount,
-    markAsRead: handleMarkAsRead,
-    markAllAsRead: handleMarkAllAsRead,
-    createNotification: handleCreateNotification,
-    refresh: loadNotifications
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    createNotification,
+    refetch: fetchNotifications,
+    refresh: fetchNotifications,
+    addNotification,
   };
 };

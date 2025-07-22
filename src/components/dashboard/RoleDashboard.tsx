@@ -1,548 +1,323 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  CheckSquare,
-  Calendar,
-  Users,
-  TrendingUp,
-  Clock,
-  AlertCircle,
+import React from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { 
+  Users, 
+  CheckSquare, 
+  Clock, 
+  AlertTriangle, 
+  MessageSquare, 
   BarChart3,
-  PlusCircle,
-  CheckCircle,
-  Target,
-  Bell,
-  MessageSquare,
-  Award,
-} from "lucide-react";
-import { UserProfile } from "@/types/database";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-interface RoleDashboardProps {
-  userProfile: UserProfile;
-}
+  Calendar,
+  Settings,
+  Plus
+} from 'lucide-react';
 
 interface DashboardStats {
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
   overdueTasks: number;
-  totalUsers?: number;
-  recentActivities: Array<{
-    id: string;
-    title: string;
-    description: string;
-    timestamp: string;
-    type:
-      | "task_created"
-      | "task_completed"
-      | "user_joined"
-      | "meeting_scheduled";
-  }>;
-  upcomingTasks: Array<{
-    id: string;
-    title: string;
-    due_date: string;
-    priority: "low" | "medium" | "high" | "urgent";
-  }>;
+  unreadMessages: number;
+  teamMembers?: number;
+}
+
+interface RoleDashboardProps {
+  stats: DashboardStats;
+  onCreateTask?: () => void;
+  onViewTasks?: () => void;
+  onViewChat?: () => void;
+  onViewReports?: () => void;
 }
 
 export const RoleDashboard: React.FC<RoleDashboardProps> = ({
-  userProfile,
+  stats,
+  onCreateTask,
+  onViewTasks,
+  onViewChat,
+  onViewReports
 }) => {
-  const isMobile = useIsMobile();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Carregar dados reais do Supabase
-  useEffect(() => {
-    loadDashboardStats();
-  }, [userProfile]);
-
-  const loadDashboardStats = async () => {
-    try {
-      setLoading(true);
-
-      // Buscar estatísticas de tarefas baseadas no papel do usuário
-      let tasks;
-      let tasksError;
-
-      if (!userProfile.is_company_admin) {
-        // Usuário comum vê apenas suas tarefas
-        const result = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("assigned_to", userProfile.id);
-        tasks = result.data;
-        tasksError = result.error;
-      } else {
-        // Admin vê todas as tarefas da empresa
-        // Primeiro buscar todos os usuários da empresa
-        const { data: companyUsers, error: usersError } = await supabase
-          .from("users")
-          .select("id")
-          .eq("company_id", userProfile.company_id);
-
-        if (usersError) {
-          console.error("Erro ao carregar usuários:", usersError);
-          return;
-        }
-
-        // Extrair apenas os IDs dos usuários
-        const userIds = companyUsers?.map(user => user.id) || [];
-
-        // Buscar tarefas de todos os usuários da empresa
-        if (userIds.length > 0) {
-          const result = await supabase
-            .from("tasks")
-            .select("*")
-            .in("assigned_to", userIds);
-          tasks = result.data;
-          tasksError = result.error;
-        } else {
-          tasks = [];
-          tasksError = null;
-        }
-      }
-
-      if (tasksError) {
-        console.error("Erro ao carregar tarefas:", tasksError);
-        return;
-      }
-
-      // Calcular estatísticas
-      const totalTasks = tasks?.length || 0;
-      const completedTasks =
-        tasks?.filter((t) => t.status === "completed").length || 0;
-      const pendingTasks =
-        tasks?.filter((t) => t.status === "pending").length || 0;
-      const overdueTasks =
-        tasks?.filter((t) => t.status === "overdue").length || 0;
-
-      // Buscar tarefas próximas do vencimento
-      const { data: upcomingTasks } = await supabase
-        .from("tasks")
-        .select("id, title, due_date, priority")
-        .gte("due_date", new Date().toISOString())
-        .lte(
-          "due_date",
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        )
-        .eq("status", "pending")
-        .order("due_date", { ascending: true })
-        .limit(5);
-
-      // Buscar atividades recentes (últimas tarefas criadas/atualizadas)
-      const { data: recentTasks } = await supabase
-        .from("tasks")
-        .select("id, title, created_at, status, updated_at")
-        .order("updated_at", { ascending: false })
-        .limit(5);
-
-      const recentActivities =
-        recentTasks?.map((task) => ({
-          id: task.id,
-          title:
-            task.status === "completed" ? "Tarefa concluída" : "Tarefa criada",
-          description: task.title,
-          timestamp: task.updated_at || task.created_at,
-          type:
-            task.status === "completed"
-              ? ("task_completed" as const)
-              : ("task_created" as const),
-        })) || [];
-
-      // Buscar total de usuários (apenas para admin)
-      let totalUsers = 0;
-      if (userProfile.is_company_admin) {
-        const { count } = await supabase
-          .from("users")
-          .select("*", { count: "exact", head: true })
-          .eq("company_id", userProfile.company_id);
-        totalUsers = count || 0;
-      }
-
-      setStats({
-        totalTasks,
-        completedTasks,
-        pendingTasks,
-        overdueTasks,
-        totalUsers,
-        recentActivities,
-        upcomingTasks: upcomingTasks || [],
-      });
-    } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar as estatísticas do dashboard",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
   };
 
-  // Handlers para os botões de ação rápida
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "users":
-        navigate("/users");
-        break;
-      case "reports":
-        navigate("/reports");
-        break;
-      case "tasks":
-        navigate("/tasks");
-        break;
-      case "chat":
-        navigate("/chat");
-        break;
-      case "calendar":
-        navigate("/calendar");
-        break;
-      case "settings":
-        navigate("/settings");
-        break;
-      case "new-task":
-        navigate("/tasks");
-        break;
-      default:
-        console.log("Ação:", action);
-    }
+  const getRoleTitle = (role?: string) => {
+    if (!role) return 'Usuário';
+    
+    const titles = {
+      gerente: 'Gerente',
+      supervisor: 'Supervisor',
+      colaborador: 'Colaborador'
+    };
+    return titles[role as keyof typeof titles] || 'Usuário';
   };
 
-  const getDashboardData = () => {
-    if (!stats) {
-      return {
-        title: "Carregando...",
-        cards: [],
-      };
-    }
-
-    if (userProfile.is_company_admin) {
-      return {
-        title: "Dashboard Administrativo",
-        cards: [
-          {
-            title: "Total de Usuários",
-            value: stats.totalUsers?.toString() || "0",
-            icon: Users,
-            color: "text-blue-600",
-          },
-          {
-            title: "Total de Tarefas",
-            value: stats.totalTasks.toString(),
-            icon: CheckSquare,
-            color: "text-green-600",
-          },
-          {
-            title: "Concluídas",
-            value: stats.completedTasks.toString(),
-            icon: CheckCircle,
-            color: "text-green-600",
-          },
-          {
-            title: "Taxa de Conclusão",
-            value:
-              stats.totalTasks > 0
-                ? `${Math.round(
-                    (stats.completedTasks / stats.totalTasks) * 100
-                  )}%`
-                : "0%",
-            icon: TrendingUp,
-            color: "text-orange-600",
-          },
-        ],
-      };
-    } else {
-      return {
-        title: "Meu Dashboard",
-        cards: [
-          {
-            title: "Minhas Tarefas",
-            value: stats.totalTasks.toString(),
-            icon: CheckSquare,
-            color: "text-blue-600",
-          },
-          {
-            title: "Pendentes",
-            value: stats.pendingTasks.toString(),
-            icon: Clock,
-            color: "text-yellow-600",
-          },
-          {
-            title: "Concluídas",
-            value: stats.completedTasks.toString(),
-            icon: CheckCircle,
-            color: "text-green-600",
-          },
-          {
-            title: "Atrasadas",
-            value: stats.overdueTasks.toString(),
-            icon: AlertCircle,
-            color: "text-red-600",
-          },
-        ],
-      };
-    }
+  const getCompletionRate = () => {
+    if (stats.totalTasks === 0) return 0;
+    return Math.round((stats.completedTasks / stats.totalTasks) * 100);
   };
 
-  const dashboardData = getDashboardData();
-
-  return (
-    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 pb-20 lg:pb-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            {dashboardData.title}
-          </h1>
-          <p className="text-gray-600 text-sm lg:text-base">
-            Bem-vindo, {userProfile.name}!
-          </p>
-        </div>
-        <Button className="flex items-center gap-2 w-full lg:w-auto">
-          <PlusCircle className="h-4 w-4" />
-          Nova Tarefa
-        </Button>
-      </div>
-
-      {/* Cards de estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        {dashboardData.cards.map((card, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-0">
-                <div className="flex-1">
-                  <p className="text-xs lg:text-sm text-gray-600 mb-1">
-                    {card.title}
-                  </p>
-                  <p className="text-xl lg:text-3xl font-bold text-gray-900">
-                    {card.value}
-                  </p>
-                </div>
-                <card.icon
-                  className={`h-8 w-8 lg:h-12 lg:w-12 ${card.color} self-end lg:self-auto`}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Seção de atividades recentes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3 lg:pb-4">
-            <CardTitle className="text-lg lg:text-xl">
-              Atividades Recentes
-            </CardTitle>
+  const renderManagerDashboard = () => (
+    <div className="space-y-6">
+      {/* Métricas Gerenciais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-16 bg-gray-200 rounded-lg"></div>
-                  </div>
-                ))}
-              </div>
-            ) : stats?.recentActivities.length ? (
-              <div className="space-y-3 lg:space-y-4">
-                {stats.recentActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm lg:text-base truncate">
-                        {activity.title}: "{activity.description}"
-                      </p>
-                      <p className="text-xs lg:text-sm text-gray-600">
-                        {new Date(activity.timestamp).toLocaleString("pt-BR")}
-                      </p>
-                    </div>
-                    <Badge
-                      className={`ml-2 text-xs ${
-                        activity.type === "task_completed"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {activity.type === "task_completed"
-                        ? "Concluída"
-                        : "Nova"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma atividade recente</p>
-              </div>
-            )}
+            <div className="text-2xl font-bold">{stats.totalTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              {getCompletionRate()}% concluídas
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3 lg:pb-4">
-            <CardTitle className="text-lg lg:text-xl">
-              Próximas Tarefas
-            </CardTitle>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Equipe</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-16 bg-gray-200 rounded-lg"></div>
-                  </div>
-                ))}
-              </div>
-            ) : stats?.upcomingTasks.length ? (
-              <div className="space-y-3 lg:space-y-4">
-                {stats.upcomingTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm lg:text-base truncate">
-                        {task.title}
-                      </p>
-                      <p className="text-xs lg:text-sm text-gray-600">
-                        Vence em{" "}
-                        {Math.ceil(
-                          (new Date(task.due_date).getTime() -
-                            new Date().getTime()) /
-                            (1000 * 60 * 60 * 24)
-                        )}{" "}
-                        dias
-                      </p>
-                    </div>
-                    <Badge
-                      className={`ml-2 text-xs ${
-                        task.priority === "urgent" || task.priority === "high"
-                          ? "bg-red-100 text-red-800"
-                          : task.priority === "medium"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {task.priority === "urgent"
-                        ? "Urgente"
-                        : task.priority === "high"
-                        ? "Alta"
-                        : task.priority === "medium"
-                        ? "Média"
-                        : "Baixa"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma tarefa próxima</p>
-              </div>
-            )}
+            <div className="text-2xl font-bold">{stats.teamMembers || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              membros ativos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tarefas Atrasadas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{stats.overdueTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              requerem atenção
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Mensagens</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.unreadMessages}</div>
+            <p className="text-xs text-muted-foreground">
+              não lidas
+            </p>
           </CardContent>
         </Card>
       </div>
-      {/* Ações Rápidas baseadas no papel */}
+
+      {/* Ações Rápidas */}
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
+          <CardDescription>
+            Acesso rápido às principais funcionalidades gerenciais
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {userProfile.is_company_admin && (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("users")}
-                >
-                  <Users className="h-6 w-6 mb-2" />
-                  Gerenciar Usuários
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("reports")}
-                >
-                  <BarChart3 className="h-6 w-6 mb-2" />
-                  Relatórios
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("new-task")}
-                >
-                  <PlusCircle className="h-6 w-6 mb-2" />
-                  Nova Tarefa
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("chat")}
-                >
-                  <Users className="h-6 w-6 mb-2" />
-                  Chat Geral
-                </Button>
-              </>
-            )}
-
-            {!userProfile.is_company_admin && (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("tasks")}
-                >
-                  <CheckSquare className="h-6 w-6 mb-2" />
-                  Minhas Tarefas
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("calendar")}
-                >
-                  <Calendar className="h-6 w-6 mb-2" />
-                  Calendário
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("chat")}
-                >
-                  <Users className="h-6 w-6 mb-2" />
-                  Mensagens
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col"
-                  onClick={() => handleQuickAction("settings")}
-                >
-                  <Users className="h-6 w-6 mb-2" />
-                  Configurações
-                </Button>
-              </>
-            )}
+            <Button onClick={onCreateTask} className="h-20 flex-col">
+              <Plus className="h-6 w-6 mb-2" />
+              Nova Tarefa
+            </Button>
+            <Button variant="outline" onClick={onViewReports} className="h-20 flex-col">
+              <BarChart3 className="h-6 w-6 mb-2" />
+              Relatórios
+            </Button>
+            <Button variant="outline" onClick={onViewTasks} className="h-20 flex-col">
+              <CheckSquare className="h-6 w-6 mb-2" />
+              Todas as Tarefas
+            </Button>
+            <Button variant="outline" onClick={onViewChat} className="h-20 flex-col">
+              <MessageSquare className="h-6 w-6 mb-2" />
+              Comunicação
+            </Button>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+
+  const renderSupervisorDashboard = () => (
+    <div className="space-y-6">
+      {/* Métricas Setoriais */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tarefas do Setor</CardTitle>
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTasks}</div>
+            <div className="flex gap-2 mt-2">
+              <Badge variant="secondary">{stats.completedTasks} concluídas</Badge>
+              <Badge variant="outline">{stats.pendingTasks} pendentes</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{stats.overdueTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              precisam de atenção
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Performance</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{getCompletionRate()}%</div>
+            <p className="text-xs text-muted-foreground">
+              taxa de conclusão
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ações do Supervisor */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestão do Setor</CardTitle>
+          <CardDescription>
+            Ferramentas para gerenciar sua equipe e tarefas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Button onClick={onCreateTask} className="h-16 flex-col">
+              <Plus className="h-5 w-5 mb-1" />
+              Atribuir Tarefa
+            </Button>
+            <Button variant="outline" onClick={onViewTasks} className="h-16 flex-col">
+              <CheckSquare className="h-5 w-5 mb-1" />
+              Ver Tarefas
+            </Button>
+            <Button variant="outline" onClick={onViewChat} className="h-16 flex-col">
+              <MessageSquare className="h-5 w-5 mb-1" />
+              Chat do Setor
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderCollaboratorDashboard = () => (
+    <div className="space-y-6">
+      {/* Minhas Tarefas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Minhas Tarefas</CardTitle>
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendingTasks} pendentes
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
+            <CheckSquare className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              {getCompletionRate()}% do total
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Urgentes</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.overdueTasks}</div>
+            <p className="text-xs text-muted-foreground">
+              requerem atenção
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ações do Colaborador */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Minhas Atividades</CardTitle>
+          <CardDescription>
+            Acesso rápido às suas tarefas e comunicação
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <Button onClick={onViewTasks} className="h-16 flex-col">
+              <CheckSquare className="h-5 w-5 mb-1" />
+              Ver Tarefas
+            </Button>
+            <Button variant="outline" onClick={onViewChat} className="h-16 flex-col">
+              <MessageSquare className="h-5 w-5 mb-1" />
+              Chat da Equipe
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header de Boas-vindas */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {getGreeting()}, {user?.name}!
+          </h1>
+          <p className="text-muted-foreground">
+            {getRoleTitle(user?.role || '')} {user?.sector && `• ${user.sector}`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">
+            <Calendar className="h-3 w-3 mr-1" />
+            {new Date().toLocaleDateString('pt-BR')}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Dashboard específico por papel */}
+      {(user?.role === 'gerente' || user?.is_company_admin) && renderManagerDashboard()}
+      {user?.role === 'supervisor' && renderSupervisorDashboard()}
+      {(user?.role === 'colaborador' || (!user?.role && !user?.is_company_admin)) && renderCollaboratorDashboard()}
     </div>
   );
 };

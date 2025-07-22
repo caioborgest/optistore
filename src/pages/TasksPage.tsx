@@ -1,8 +1,13 @@
 import React from 'react';
-import TaskManager from '@/components/TaskManager';
+import Layout from '@/components/Layout';
+import { ModernTaskManager } from '@/components/tasks/ModernTaskManager';
 
-const TasksPage = () => {
-  return <TaskManager />;
+const TasksPage: React.FC = () => {
+  return (
+    <Layout>
+      <ModernTaskManager />
+    </Layout>
+  );
 };
 
 export default TasksPage;

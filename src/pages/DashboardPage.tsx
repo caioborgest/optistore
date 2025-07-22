@@ -1,10 +1,109 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import Layout from '@/components/Layout';
+import { ModernDashboard } from '@/components/dashboard/ModernDashboard';
+import { supabase } from '@/integrations/supabase/client';
+
+interface DashboardStats {
+  totalTasks: number;
+  completedTasks: number;
+  pendingTasks: number;
+  overdueTasks: number;
+  unreadMessages: number;
+  teamMembers?: number;
+}
 
 const DashboardPage = () => {
   const { userProfile, isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTasks: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+    overdueTasks: 0,
+    unreadMessages: 0,
+    teamMembers: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    if (userProfile) {
+      loadDashboardStats();
+    }
+  }, [userProfile]);
+
+  const loadDashboardStats = async () => {
+    if (!userProfile) return;
+
+    try {
+      setLoadingStats(true);
+
+      // Buscar tarefas baseado no papel do usuário
+      let tasksQuery = supabase.from('tasks').select('*');
+
+      if (userProfile.role === 'colaborador') {
+        // Colaborador vê apenas suas tarefas
+        tasksQuery = tasksQuery.eq('assigned_to', userProfile.id);
+      } else if (userProfile.role === 'supervisor' && userProfile.sector) {
+        // Supervisor vê tarefas do seu setor
+        tasksQuery = tasksQuery.eq('sector', userProfile.sector);
+      }
+      // Gerente vê todas as tarefas (sem filtro adicional)
+
+      const { data: tasks } = await tasksQuery;
+
+      // Calcular estatísticas das tarefas
+      const totalTasks = tasks?.length || 0;
+      const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
+      const pendingTasks = tasks?.filter(t => t.status === 'pending').length || 0;
+      const overdueTasks = tasks?.filter(t => t.status === 'overdue').length || 0;
+
+      // Buscar mensagens não lidas (simulado por enquanto)
+      const unreadMessages = 0;
+
+      // Buscar número de membros da equipe (apenas para gerentes)
+      let teamMembers = 0;
+      if (userProfile.role === 'gerente' && userProfile.company_id) {
+        const { count } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', userProfile.company_id)
+          .eq('is_active', true);
+        teamMembers = count || 0;
+      }
+
+      setStats({
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        overdueTasks,
+        unreadMessages,
+        teamMembers
+      });
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleCreateTask = () => {
+    navigate('/tasks');
+  };
+
+  const handleViewTasks = () => {
+    navigate('/tasks');
+  };
+
+  const handleViewChat = () => {
+    navigate('/chat');
+  };
+
+  const handleViewReports = () => {
+    navigate('/reports');
+  };
 
   if (loading) {
     return (
@@ -21,60 +120,29 @@ const DashboardPage = () => {
     return <Navigate to="/auth/login" replace />;
   }
 
+  if (loadingStats) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-gray-600">Carregando dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Bem-vindo, {userProfile.name}!
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Dashboard do OptiFlow - Sistema de Gestão
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Tarefas</h3>
-            <p className="text-gray-600">Gerencie suas tarefas diárias</p>
-            <div className="mt-4">
-              <span className="text-2xl font-bold text-primary">0</span>
-              <span className="text-gray-500 ml-2">pendentes</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Calendário</h3>
-            <p className="text-gray-600">Visualize seus compromissos</p>
-            <div className="mt-4">
-              <span className="text-2xl font-bold text-primary">0</span>
-              <span className="text-gray-500 ml-2">hoje</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Mensagens</h3>
-            <p className="text-gray-600">Chat com sua equipe</p>
-            <div className="mt-4">
-              <span className="text-2xl font-bold text-purple-600">0</span>
-              <span className="text-gray-500 ml-2">não lidas</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Usuário</h3>
-          <div className="space-y-2">
-            <p><strong>Nome:</strong> {userProfile.name}</p>
-            <p><strong>Email:</strong> {userProfile.email}</p>
-            <p><strong>Tipo:</strong> {userProfile.is_company_admin ? 'Administrador' : 'Usuário'}</p>
-            {userProfile.company_id && (
-              <p><strong>Empresa:</strong> Vinculado</p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <Layout>
+      <ModernDashboard
+        stats={stats}
+        onCreateTask={handleCreateTask}
+        onViewTasks={handleViewTasks}
+        onViewChat={handleViewChat}
+        onViewReports={handleViewReports}
+      />
+    </Layout>
   );
 };
 

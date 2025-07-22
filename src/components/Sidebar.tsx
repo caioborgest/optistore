@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -13,7 +13,12 @@ import {
   Users,
   Crown,
   Menu,
-  X
+  X,
+  Zap,
+  Bell,
+  Search,
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserProfile } from '@/types/database';
@@ -22,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationCenter } from './NotificationCenter';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNotifications } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -31,7 +37,11 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
   const { logout } = useAuth();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const { unreadCount } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Menu items baseados no papel do usuário
   const getMenuItems = (isCompanyAdmin: boolean) => {
@@ -47,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
         ...baseItems,
         { icon: Users, label: 'Usuários', path: '/users' },
         { icon: BarChart3, label: 'Relatórios', path: '/reports' },
+        { icon: Zap, label: 'Integrações', path: '/integrations' },
         { icon: Building2, label: 'Empresa', path: '/company' },
         { icon: Settings, label: 'Configurações', path: '/settings' },
       ];

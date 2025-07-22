@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "OptiFlow Mobile",
+    "slug": "optiflow-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3B82F6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.optiflow.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "OptiFlow precisa da localização para registrar check-in/out e localizar tarefas próximas.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "OptiFlow precisa da localização para funcionalidades de geolocalização.",
+        "NSCameraUsageDescription": "OptiFlow precisa da câmera para anexar fotos às tarefas.",
+        "NSPhotoLibraryUsageDescription": "OptiFlow precisa acessar a galeria para anexar imagens às tarefas."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3B82F6"
+      },
+      "package": "com.optiflow.mobile",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3B82F6",
+          "sounds": [
+            "./assets/notification-sound.wav"
+          ]
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "OptiFlow precisa da localização para funcionalidades de geolocalização."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}

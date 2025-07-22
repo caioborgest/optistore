@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import { ModernSidebar } from './ModernSidebar';
 import { useAuth } from '../hooks/useAuth';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { useIsMobile } from '../hooks/use-mobile';
@@ -36,7 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         "flex h-screen",
         isMobile ? "flex-col" : "flex-row"
       )}>
-        <Sidebar userProfile={userProfile} />
+        <ModernSidebar userProfile={userProfile} />
         
         <main className={cn(
           "flex-1 overflow-auto",

@@ -1,0 +1,269 @@
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion preferences */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.reduce-motion {
+  scroll-behavior: auto !important;
+}
+
+/* High contrast mode */
+.high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --border: #000000;
+  --primary: #0000ff;
+  --primary-foreground: #ffffff;
+  --secondary: #000000;
+  --secondary-foreground: #ffffff;
+  --muted: #e0e0e0;
+  --muted-foreground: #000000;
+  --accent: #e0e0e0;
+  --accent-foreground: #000000;
+  --success: #008000;
+  --success-foreground: #ffffff;
+  --warning: #ff8c00;
+  --warning-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --info: #0000ff;
+  --info-foreground: #ffffff;
+}
+
+.high-contrast.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --border: #ffffff;
+  --primary: #00ffff;
+  --primary-foreground: #000000;
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
+  --muted: #333333;
+  --muted-foreground: #ffffff;
+  --accent: #333333;
+  --accent-foreground: #ffffff;
+  --success: #00ff00;
+  --success-foreground: #000000;
+  --warning: #ffff00;
+  --warning-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --info: #00ffff;
+  --info-foreground: #000000;
+}
+
+.high-contrast * {
+  border-width: 2px !important;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast.dark button,
+.high-contrast.dark input,
+.high-contrast.dark select,
+.high-contrast.dark textarea {
+  border: 2px solid #ffffff !important;
+}
+
+/* Large text mode */
+.large-text {
+  font-size: 120% !important;
+}
+
+.large-text h1 {
+  font-size: 3rem !important;
+}
+
+.large-text h2 {
+  font-size: 2.5rem !important;
+}
+
+.large-text h3 {
+  font-size: 2rem !important;
+}
+
+.large-text h4 {
+  font-size: 1.75rem !important;
+}
+
+.large-text h5 {
+  font-size: 1.5rem !important;
+}
+
+.large-text h6 {
+  font-size: 1.25rem !important;
+}
+
+.large-text p,
+.large-text span,
+.large-text button,
+.large-text input,
+.large-text label,
+.large-text a {
+  font-size: 1.25rem !important;
+  line-height: 1.6 !important;
+}
+
+.large-text .text-xs {
+  font-size: 1rem !important;
+}
+
+.large-text .text-sm {
+  font-size: 1.125rem !important;
+}
+
+.large-text .text-base {
+  font-size: 1.25rem !important;
+}
+
+.large-text .text-lg {
+  font-size: 1.5rem !important;
+}
+
+.large-text .text-xl {
+  font-size: 1.75rem !important;
+}
+
+/* Enhanced focus visibility */
+.focus-visible-enhanced *:focus-visible {
+  outline: 3px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important;
+  border-radius: 4px !important;
+}
+
+.focus-visible-enhanced.high-contrast *:focus-visible {
+  outline: 4px solid #ffffff !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #000000, 0 0 0 6px #ffffff !important;
+}
+
+.focus-visible-enhanced.high-contrast.dark *:focus-visible {
+  outline: 4px solid #000000 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 6px #000000 !important;
+}
+
+/* Keyboard navigation enhancements */
+.keyboard-navigation {
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+.keyboard-navigation button:focus-visible,
+.keyboard-navigation input:focus-visible,
+.keyboard-navigation select:focus-visible,
+.keyboard-navigation textarea:focus-visible,
+.keyboard-navigation a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+  transition: outline-color 0.15s ease-in-out;
+}
+
+/* Screen reader optimizations */
+.screen-reader-optimized [aria-hidden="true"] {
+  display: none !important;
+}
+
+.screen-reader-optimized img:not([alt]) {
+  opacity: 0.5;
+}
+
+.screen-reader-optimized img:not([alt])::after {
+  content: " (Imagem sem descrição alternativa)";
+  position: absolute;
+  background: #ff0000;
+  color: #ffffff;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: 2px;
+}
+
+/* Skip links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  font-weight: bold;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* High contrast mode improvements */
+.high-contrast .shadow-sm,
+.high-contrast .shadow,
+.high-contrast .shadow-md,
+.high-contrast .shadow-lg,
+.high-contrast .shadow-xl {
+  box-shadow: none !important;
+  border: 2px solid currentColor !important;
+}
+
+/* Motion safe alternatives */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .sr-only {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+  }
+  
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+}
