@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,14 @@ export const TestAdvancedFeatures: React.FC = () => {
   const { options, setOption, announceToScreenReader } = useA11y();
   const [gestureInfo, setGestureInfo] = useState<string>('');
   const gestureRef = useRef<HTMLDivElement>(null);
+  const colorPreviewRef = useRef<HTMLDivElement>(null);
+
+  // Update color preview dynamically
+  useEffect(() => {
+    if (colorPreviewRef.current) {
+      colorPreviewRef.current.style.setProperty('--preview-color', colors.primary);
+    }
+  }, [colors.primary]);
 
   // Configure gestures
   useGestures(gestureRef, {
@@ -210,8 +218,8 @@ export const TestAdvancedFeatures: React.FC = () => {
               </div>
               
               <div 
-                className="p-4 rounded-lg border color-preview" 
-                style={{ '--preview-color': colors.primary } as React.CSSProperties}
+                ref={colorPreviewRef}
+                className="p-4 rounded-lg border color-preview"
               >
                 Prévia da cor primária
               </div>
