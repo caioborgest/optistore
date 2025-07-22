@@ -130,12 +130,10 @@ export const NotificationCenter: React.FC = () => {
         return '✅';
       case 'task_overdue':
         return '⚠️';
-      case 'chat_message':
+      case 'message':
         return '💬';
       case 'system':
         return '⚙️';
-      case 'reminder':
-        return '🔔';
       default:
         return '📢';
     }
@@ -149,12 +147,10 @@ export const NotificationCenter: React.FC = () => {
         return 'bg-green-50 border-green-200';
       case 'task_overdue':
         return 'bg-red-50 border-red-200';
-      case 'chat_message':
+      case 'message':
         return 'bg-purple-50 border-purple-200';
       case 'system':
         return 'bg-gray-50 border-gray-200';
-      case 'reminder':
-        return 'bg-yellow-50 border-yellow-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -239,7 +235,7 @@ export const NotificationCenter: React.FC = () => {
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mb-2">
-                          {notification.message}
+                          {notification.content}
                         </p>
                         <p className="text-xs text-gray-500">
                           {formatDistanceToNow(new Date(notification.created_at), {

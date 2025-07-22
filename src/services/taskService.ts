@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/database';
 
@@ -17,9 +18,16 @@ export const TaskService = {
 
   async createTask(taskData: Partial<Task>) {
     try {
+      // Ensure required fields are present
+      const completeTaskData = {
+        title: taskData.title || '',
+        sector: taskData.sector || 'Geral',
+        ...taskData
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert([taskData])
+        .insert(completeTaskData)
         .select()
         .single();
 
