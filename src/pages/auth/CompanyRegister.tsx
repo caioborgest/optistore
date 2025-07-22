@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Logo } from '@/components/ui/logo';
 import { Loader2, Building2, User, Mail, Lock, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -72,22 +73,7 @@ const CompanyRegister = () => {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                <img 
-                  src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
-                  alt="OptiFlow" 
-                  className="h-8 w-8"
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  <span className="text-green-500">Opti</span>
-                  <span className="text-gray-800">Flow</span>
-                </h1>
-                <p className="text-sm text-gray-500">Sistema de Gestão</p>
-              </div>
-            </div>
+            <Logo size="lg" />
           </div>
           <CardTitle className="text-2xl font-bold">Registrar empresa</CardTitle>
           <CardDescription>

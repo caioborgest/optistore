@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Logo } from '@/components/ui/logo';
 import { Loader2, User, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -51,22 +52,7 @@ const Register = () => {
       <Card className="w-full max-w-md card-modern hover-lift animate-fade-in">
         <CardHeader className="text-center space-y-6">
           <div className="flex justify-center">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-14 h-14 gradient-primary rounded-2xl shadow-elegant animate-bounce-gentle">
-                <img 
-                  src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
-                  alt="OptiFlow" 
-                  className="h-8 w-8"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">
-                  <span className="text-primary">Opti</span>
-                  <span className="text-foreground">Flow</span>
-                </h1>
-                <p className="text-sm text-muted-foreground">Sistema de Gestão</p>
-              </div>
-            </div>
+            <Logo size="lg" />
           </div>
           <div className="space-y-2">
             <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

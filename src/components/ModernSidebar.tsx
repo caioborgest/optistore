@@ -27,6 +27,7 @@ import { UserProfile } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Logo } from '@/components/ui/logo';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNotifications } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
@@ -206,10 +207,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
           </div>
           {!isCollapsed && (
             <div className="animate-slide-right">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                OptiFlow
-              </h1>
-              <p className="text-xs text-gray-500">Sistema de Gestão</p>
+              <Logo variant="text" size="sm" />
             </div>
           )}
         </div>
@@ -348,7 +346,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
       )}>
         {!isCollapsed && (
           <div className="text-center">
-            <p className="text-xs text-gray-500 mb-2">OptiFlow v1.0.0</p>
+            <p className="text-xs text-gray-500 mb-2">OptiFlow VAREJO v1.0.0</p>
             <div className="flex items-center justify-center gap-2">
               <Dot className="h-3 w-3 text-green-500 animate-pulse" />
               <span className="text-xs text-gray-500">Sistema Online</span>

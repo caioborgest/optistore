@@ -1,21 +1,27 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Construction, 
-  CheckCircle, 
-  Clock, 
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Construction,
+  CheckCircle,
+  Clock,
   Sparkles,
   ArrowRight,
-  Zap
-} from 'lucide-react';
+  Zap,
+} from "lucide-react";
 
 interface DevelopmentStatusProps {
   title: string;
   description: string;
   features: string[];
-  status?: 'development' | 'coming-soon' | 'beta';
+  status?: "development" | "coming-soon" | "beta";
   onGetStarted?: () => void;
 }
 
@@ -23,37 +29,37 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
   title,
   description,
   features,
-  status = 'development',
-  onGetStarted
+  status = "development",
+  onGetStarted,
 }) => {
   const getStatusConfig = () => {
     switch (status) {
-      case 'coming-soon':
+      case "coming-soon":
         return {
           icon: Clock,
-          color: '#f59e0b',
-          bgColor: 'rgba(245, 158, 11, 0.1)',
-          borderColor: 'rgba(245, 158, 11, 0.3)',
-          label: 'Em Breve',
-          textColor: '#92400e'
+          color: "#f59e0b",
+          bgColor: "rgba(245, 158, 11, 0.1)",
+          borderColor: "rgba(245, 158, 11, 0.3)",
+          label: "Em Breve",
+          textColor: "#92400e",
         };
-      case 'beta':
+      case "beta":
         return {
           icon: Zap,
-          color: '#8b5cf6',
-          bgColor: 'rgba(139, 92, 246, 0.1)',
-          borderColor: 'rgba(139, 92, 246, 0.3)',
-          label: 'Beta',
-          textColor: '#6b21a8'
+          color: "#8b5cf6",
+          bgColor: "rgba(139, 92, 246, 0.1)",
+          borderColor: "rgba(139, 92, 246, 0.3)",
+          label: "Beta",
+          textColor: "#6b21a8",
         };
       default:
         return {
           icon: Construction,
-          color: '#00bf63',
-          bgColor: 'rgba(0, 191, 99, 0.1)',
-          borderColor: 'rgba(0, 191, 99, 0.3)',
-          label: 'Em Desenvolvimento',
-          textColor: '#00632b'
+          color: "#00bf63",
+          bgColor: "rgba(0, 191, 99, 0.1)",
+          borderColor: "rgba(0, 191, 99, 0.3)",
+          label: "Em Desenvolvimento",
+          textColor: "#00632b",
         };
     }
   };
@@ -74,24 +80,24 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
         <CardContent className="p-8">
           <div className="text-center">
             {/* Status Icon */}
-            <div 
-              className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 animate-pulse"
-              style={{ backgroundColor: config.bgColor }}
+            <div
+              className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 animate-pulse status-indicator"
+              style={{ '--status-color': config.bgColor } as React.CSSProperties}
             >
-              <IconComponent 
-                className="h-8 w-8" 
-                style={{ color: config.color }} 
+              <IconComponent
+                className="h-8 w-8"
+                style={{ color: config.color } as React.CSSProperties}
               />
             </div>
 
             {/* Status Badge */}
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="mb-4 text-sm px-4 py-2"
-              style={{ 
+              style={{
                 borderColor: config.borderColor,
                 backgroundColor: config.bgColor,
-                color: config.textColor
+                color: config.textColor,
               }}
             >
               <Sparkles className="h-3 w-3 mr-2" />
@@ -103,19 +109,19 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
               Funcionalidade em Construção
             </h3>
             <p className="text-gray-600 mb-8">
-              Estamos trabalhando para trazer esta funcionalidade incrível para você. 
-              Fique atento às próximas atualizações!
+              Estamos trabalhando para trazer esta funcionalidade incrível para
+              você. Fique atento às próximas atualizações!
             </p>
 
             {/* Features List */}
-            <div 
+            <div
               className="border rounded-xl p-6 mb-8"
-              style={{ 
+              style={{
                 backgroundColor: config.bgColor,
-                borderColor: config.borderColor
+                borderColor: config.borderColor,
               }}
             >
-              <h4 
+              <h4
                 className="font-semibold mb-4 flex items-center justify-center gap-2"
                 style={{ color: config.textColor }}
               >
@@ -124,15 +130,15 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {features.map((feature, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="flex items-center gap-2 text-sm animate-slide-right"
-                    style={{ 
+                    style={{
                       animationDelay: `${index * 100}ms`,
-                      color: config.textColor
+                      color: config.textColor,
                     }}
                   >
-                    <div 
+                    <div
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: config.color }}
                     />
@@ -144,12 +150,12 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
 
             {/* Action Button */}
             {onGetStarted && (
-              <Button 
+              <Button
                 onClick={onGetStarted}
                 className="hover-lift"
-                style={{ 
+                style={{
                   background: `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`,
-                  color: 'white'
+                  color: "white",
                 }}
               >
                 Começar Agora
@@ -164,11 +170,11 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
                 <span>75%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="h-2 rounded-full transition-all duration-1000 ease-out progress-fill"
-                  style={{ 
-                    width: '75%',
-                    background: `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`
+                  style={{
+                    width: "75%",
+                    background: `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`,
                   }}
                 />
               </div>
@@ -178,9 +184,13 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
       </Card>
 
       {/* Additional Info */}
-      <div className="text-center text-sm text-gray-500 animate-slide-up" style={{ animationDelay: '400ms' }}>
+      <div
+        className="text-center text-sm text-gray-500 animate-slide-up"
+        style={{ animationDelay: "400ms" }}
+      >
         <p>
-          Tem sugestões ou feedback? Entre em contato conosco para ajudar a moldar esta funcionalidade!
+          Tem sugestões ou feedback? Entre em contato conosco para ajudar a
+          moldar esta funcionalidade!
         </p>
       </div>
     </div>

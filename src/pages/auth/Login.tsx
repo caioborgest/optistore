@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { Logo } from '@/components/ui/logo';
 import { Loader2 } from 'lucide-react';
 
 const Login = () => {
@@ -54,10 +55,7 @@ const Login = () => {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <span className="text-4xl font-bold">
-            <span className="text-primary">Opti</span>
-            <span className="text-gray-800">Flow</span>
-          </span>
+          <Logo size="lg" className="justify-center" />
         </div>
 
         {/* Form Container */}

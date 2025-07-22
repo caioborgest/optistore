@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationCenter } from './NotificationCenter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNotifications } from '@/hooks/useNotifications';
+import { Logo } from '@/components/ui/logo';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -111,11 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userProfile }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-12 h-12 gradient-primary rounded-2xl shadow-elegant animate-pulse-glow">
-              <img 
-                src="/lovable-uploads/d1b1dde5-6ded-4c8e-9c7a-d0128ee74001.png" 
-                alt="OptiFlow" 
-                className="h-8 w-8"
-              />
+              <Logo variant="icon" size="sm" />
             </div>
             <div>
               <h1 className="text-xl font-bold">
