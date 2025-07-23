@@ -1,3 +1,4 @@
+
 import { Task } from '@/types/database';
 
 export class MockTaskService {
@@ -11,6 +12,7 @@ export class MockTaskService {
       sector: 'Vendas',
       assigned_to: '1',
       created_by: '1',
+      company_id: '1',
       due_date: new Date(Date.now() + 86400000).toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -24,6 +26,7 @@ export class MockTaskService {
       sector: 'TI',
       assigned_to: '2',
       created_by: '1',
+      company_id: '1',
       due_date: new Date(Date.now() + 172800000).toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

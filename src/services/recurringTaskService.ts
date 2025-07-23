@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/database';
 
@@ -18,7 +19,7 @@ export const RecurringTaskService = {
         .insert([{
           ...taskData,
           is_recurring: true,
-          recurrence_pattern: taskData.recurrencePattern
+          recurrence_pattern: JSON.stringify(taskData.recurrencePattern)
         }])
         .select()
         .single();
@@ -37,7 +38,7 @@ export const RecurringTaskService = {
   async generateNextOccurrences(parentTask: Task, count: number = 3) {
     if (!parentTask.recurrence_pattern || !parentTask.due_date) return;
 
-    const pattern = parentTask.recurrence_pattern as RecurrencePattern;
+    const pattern = JSON.parse(parentTask.recurrence_pattern as string) as RecurrencePattern;
     const nextDates = this.calculateNextDates(parentTask.due_date, pattern, count);
 
     const nextTasks = nextDates.map(date => ({
@@ -46,13 +47,14 @@ export const RecurringTaskService = {
       sector: parentTask.sector,
       assigned_to: parentTask.assigned_to,
       created_by: parentTask.created_by,
+      company_id: parentTask.company_id,
       due_date: date,
       priority: parentTask.priority,
+      status: 'pending' as const,
       is_recurring: true,
       recurrence_pattern: parentTask.recurrence_pattern,
       parent_task_id: parentTask.id,
       tags: parentTask.tags,
-      location: parentTask.location,
       estimated_hours: parentTask.estimated_hours
     }));
 
@@ -110,7 +112,7 @@ export const RecurringTaskService = {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .update({ recurrence_pattern: pattern })
+        .update({ recurrence_pattern: JSON.stringify(pattern) })
         .eq('id', taskId)
         .select()
         .single();

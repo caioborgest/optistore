@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { 
   BarChart, 
   Bar, 
@@ -203,36 +202,17 @@ export const AdvancedReports: React.FC<AdvancedReportsProps> = ({ className }) =
             
             <div>
               <Label>Período Personalizado</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from && dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
-                      </>
-                    ) : (
-                      <span>Selecione o período</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{
-                      from: dateRange.from,
-                      to: dateRange.to
-                    }}
-                    onSelect={(range) => {
-                      if (range?.from && range?.to) {
-                        handleDateRangeChange({ from: range.from, to: range.to });
-                      }
-                    }}
-                    numberOfMonths={2}
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePickerWithRange 
+                date={{
+                  from: dateRange.from,
+                  to: dateRange.to
+                }}
+                onDateChange={(range) => {
+                  if (range?.from && range?.to) {
+                    handleDateRangeChange({ from: range.from, to: range.to });
+                  }
+                }}
+              />
             </div>
           </div>
         </CardContent>

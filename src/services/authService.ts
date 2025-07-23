@@ -26,10 +26,13 @@ export const authService = {
         name: profile.name,
         email: profile.email,
         role: profile.role || 'colaborador',
-        is_company_admin: profile.is_company_admin || false,
-        company_id: profile.company_id,
+        sector: profile.sector,
+        phone: profile.phone,
         avatar_url: profile.avatar_url,
         is_active: profile.is_active !== false,
+        is_company_admin: profile.is_company_admin || false,
+        company_id: profile.company_id,
+        last_login: profile.last_login,
         created_at: profile.created_at,
         updated_at: profile.updated_at
       };
@@ -91,6 +94,8 @@ export const authService = {
             id: data.user.id,
             name,
             email,
+            role: 'colaborador',
+            is_active: true,
             is_company_admin: false
           }]);
 
@@ -134,10 +139,13 @@ export const authService = {
         name: data.name,
         email: data.email,
         role: data.role || 'colaborador',
-        is_company_admin: data.is_company_admin || false,
-        company_id: data.company_id,
+        sector: data.sector,
+        phone: data.phone,
         avatar_url: data.avatar_url,
         is_active: data.is_active !== false,
+        is_company_admin: data.is_company_admin || false,
+        company_id: data.company_id,
+        last_login: data.last_login,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
