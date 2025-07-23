@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { NotificationCenter } from './NotificationCenter';
+import { Logo } from '@/components/ui/logo';
 import {
   Home,
   CheckSquare,
@@ -20,13 +22,14 @@ import {
   Menu,
   X,
   LogOut,
-  Bell,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 
+import { UserProfile } from '@/types/database';
+
 interface ModernSidebarProps {
-  userProfile: any;
+  userProfile: UserProfile;
 }
 
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => {
@@ -132,17 +135,13 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
               <Menu className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">O</span>
-              </div>
+              <Logo variant="icon" size="sm" />
               <span className="font-bold text-gray-900">OptiFlow</span>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="p-2">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationCenter />
             <Avatar className="h-8 w-8">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
@@ -167,9 +166,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <span className="text-white font-bold">O</span>
-                  </div>
+                  <Logo variant="icon" size="sm" />
                   <div>
                     <h1 className="font-bold text-xl text-gray-900">OptiFlow</h1>
                     <p className="text-sm text-gray-500">Sistema de Gestão</p>
@@ -256,9 +253,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold">O</span>
-              </div>
+              <Logo variant="icon" size="sm" />
               <div>
                 <h1 className="font-bold text-xl text-gray-900">OptiFlow</h1>
                 <p className="text-sm text-gray-500">Sistema de Gestão</p>
