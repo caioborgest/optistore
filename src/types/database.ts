@@ -20,7 +20,7 @@ export interface UserProfile {
   sector?: string;
   phone?: string;
   avatar_url?: string;
-  is_active: boolean;
+  is_active?: boolean;
   is_company_admin: boolean;
   company_id?: string;
   last_login?: string;
@@ -50,6 +50,7 @@ export interface Task {
   parent_task_id?: string;
   attachments?: string[];
   sector?: string;
+  tags?: string[];
 }
 
 export interface Chat {

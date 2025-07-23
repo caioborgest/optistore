@@ -46,7 +46,8 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
         assigned_to: 'user2',
         company_id: 'comp1',
         estimated_hours: 4,
-        sector: 'Vendas'
+        sector: 'Vendas',
+        tags: ['vendas', 'relatório']
       },
       {
         id: '2',
@@ -61,7 +62,8 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
         assigned_to: 'user3',
         company_id: 'comp1',
         estimated_hours: 8,
-        sector: 'TI'
+        sector: 'TI',
+        tags: ['desenvolvimento', 'notificações']
       }
     ];
     
@@ -109,6 +111,12 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
       case 'overdue': return 'Atrasada';
       default: return status;
     }
+  };
+
+  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, ...updates } : task
+    ));
   };
 
   return (
@@ -208,7 +216,7 @@ export const ModernTaskManager: React.FC<ModernTaskManagerProps> = ({ onCreateTa
 
       {/* Conteúdo principal */}
       {viewMode === 'kanban' ? (
-        <DraggableKanban tasks={filteredTasks} onUpdateTask={() => {}} />
+        <DraggableKanban tasks={filteredTasks} onTaskUpdate={handleUpdateTask} />
       ) : (
         <Card>
           <CardHeader>

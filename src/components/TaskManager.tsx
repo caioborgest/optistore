@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,7 @@ const TaskManager = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed' | 'cancelled'>('pending');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [sector, setSector] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,7 @@ const TaskManager = () => {
       const newTask = {
         ...taskData,
         status: 'pending' as const,
-        priority: taskData.priority || 'medium' as const,
+        priority: (taskData.priority === 'urgent' ? 'high' : taskData.priority) as 'low' | 'medium' | 'high',
         created_by: userProfile?.id || '',
         sector: taskData.sector || 'Geral',
       };
@@ -173,7 +172,7 @@ const TaskManager = () => {
     setDescription(task.description || '');
     setStatus(task.status === 'overdue' ? 'pending' : task.status);
     setPriority(task.priority);
-    setSector(task.sector);
+    setSector(task.sector || '');
     setDueDate(task.due_date ? new Date(task.due_date) : undefined);
     setIsEditOpen(true);
   };
@@ -281,7 +280,7 @@ const TaskManager = () => {
                 </Select>
 
                 <Label htmlFor="priority">Prioridade</Label>
-                <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setPriority(value)}>
+                <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
@@ -289,7 +288,6 @@ const TaskManager = () => {
                     <SelectItem value="low">Baixa</SelectItem>
                     <SelectItem value="medium">Média</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -349,7 +347,7 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sector, setSector] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
 
   const handleSubmit = () => {
@@ -393,7 +391,7 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
 
       <div>
         <Label htmlFor="priority">Prioridade</Label>
-        <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setPriority(value)}>
+        <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione a prioridade" />
           </SelectTrigger>
@@ -401,7 +399,6 @@ const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onCreate, onCancel }) =
             <SelectItem value="low">Baixa</SelectItem>
             <SelectItem value="medium">Média</SelectItem>
             <SelectItem value="high">Alta</SelectItem>
-            <SelectItem value="urgent">Urgente</SelectItem>
           </SelectContent>
         </Select>
       </div>
