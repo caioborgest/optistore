@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ModernSidebar } from './ModernSidebar';
@@ -32,15 +33,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className={cn(
-        "flex min-h-screen",
-        isMobile ? "flex-col" : "flex-row"
-      )}>
+      <div className="flex min-h-screen">
         <ModernSidebar userProfile={userProfile} />
         
         <main className={cn(
-          "flex-1 overflow-auto w-full",
-          isMobile ? "pt-0" : "ml-0"
+          "flex-1 overflow-auto",
+          isMobile ? "pt-16" : "ml-64"
         )}>
           {children}
         </main>
