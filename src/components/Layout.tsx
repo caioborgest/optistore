@@ -33,18 +33,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className={cn(
-        "flex h-screen",
+        "flex min-h-screen",
         isMobile ? "flex-col" : "flex-row"
       )}>
         <ModernSidebar userProfile={userProfile} />
         
         <main className={cn(
-          "flex-1 overflow-auto",
-          isMobile ? "pt-16" : ""
+          "flex-1 overflow-auto w-full",
+          isMobile ? "pt-0" : "ml-0"
         )}>
-          <div className="min-h-full">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
       <PWAInstallPrompt />
