@@ -171,7 +171,7 @@ const TaskManager = () => {
     setSelectedTask(task);
     setTitle(task.title);
     setDescription(task.description || '');
-    setStatus(task.status);
+    setStatus(task.status === 'overdue' ? 'pending' : task.status);
     setPriority(task.priority);
     setSector(task.sector);
     setDueDate(task.due_date ? new Date(task.due_date) : undefined);

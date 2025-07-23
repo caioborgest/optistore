@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,14 +59,14 @@ export const TestFunctionalities: React.FC = () => {
       name: 'Sistema de Autenticação',
       status: user ? 'success' : 'error',
       message: user ? `Usuário logado: ${user.name}` : 'Usuário não autenticado',
-      details: user ? `Email: ${user.email}, Papel: ${user.role || 'N/A'}` : undefined
+      details: user ? `Email: ${user.email}` : undefined
     });
 
     // Teste 3: Tabelas do banco
-    const tables = ['users', 'tasks', 'chats', 'messages', 'notifications'];
-    for (const table of tables) {
+    const existingTables = ['users', 'tasks', 'chats', 'messages', 'notifications'];
+    for (const table of existingTables) {
       try {
-        const { error } = await supabase.from(table).select('*').limit(1);
+        const { error } = await supabase.from(table as any).select('*').limit(1);
         testResults.push({
           name: `Tabela ${table}`,
           status: error ? 'error' : 'success',
@@ -99,24 +100,6 @@ export const TestFunctionalities: React.FC = () => {
         details: error.message
       });
     }
-
-    // Teste 5: Serviços avançados
-    const services = [
-      { name: 'Relatórios', path: '/reports' },
-      { name: 'Integrações', path: '/integrations' },
-      { name: 'Dashboard', path: '/dashboard' },
-      { name: 'Tarefas', path: '/tasks' },
-      { name: 'Chat', path: '/chat' }
-    ];
-
-    services.forEach(service => {
-      testResults.push({
-        name: `Rota ${service.name}`,
-        status: 'success',
-        message: `Rota ${service.path} configurada`,
-        details: `Acesse ${window.location.origin}${service.path}`
-      });
-    });
 
     setResults(testResults);
     setTesting(false);
@@ -232,31 +215,23 @@ export const TestFunctionalities: React.FC = () => {
               <Database className="h-8 w-8 text-blue-600" />
               <div>
                 <div className="font-medium">Sistema de Tarefas</div>
-                <div className="text-sm text-muted-foreground">Gestão completa com recorrência</div>
+                <div className="text-sm text-muted-foreground">Gestão completa</div>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-3 border rounded-lg">
               <MessageSquare className="h-8 w-8 text-green-600" />
               <div>
-                <div className="font-medium">Chat em Tempo Real</div>
-                <div className="text-sm text-muted-foreground">Comunicação instantânea</div>
+                <div className="font-medium">Chat</div>
+                <div className="text-sm text-muted-foreground">Comunicação</div>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-3 border rounded-lg">
               <BarChart3 className="h-8 w-8 text-purple-600" />
               <div>
-                <div className="font-medium">Relatórios Avançados</div>
-                <div className="text-sm text-muted-foreground">Analytics e métricas</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <Zap className="h-8 w-8 text-orange-600" />
-              <div>
-                <div className="font-medium">Integrações</div>
-                <div className="text-sm text-muted-foreground">APIs externas e automações</div>
+                <div className="font-medium">Relatórios</div>
+                <div className="text-sm text-muted-foreground">Analytics</div>
               </div>
             </div>
 
@@ -272,7 +247,7 @@ export const TestFunctionalities: React.FC = () => {
               <Settings className="h-8 w-8 text-gray-600" />
               <div>
                 <div className="font-medium">Configurações</div>
-                <div className="text-sm text-muted-foreground">Personalização completa</div>
+                <div className="text-sm text-muted-foreground">Personalização</div>
               </div>
             </div>
           </div>

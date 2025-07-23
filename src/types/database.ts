@@ -17,7 +17,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
-  role: 'gerente' | 'supervisor' | 'colaborador';
+  role?: 'gerente' | 'supervisor' | 'colaborador';
   sector?: string;
   phone?: string;
   avatar_url?: string;
@@ -33,7 +33,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   sector: string;
   assigned_to?: string;
@@ -54,7 +54,7 @@ export interface Task {
 export interface Chat {
   id: string;
   name?: string;
-  type: 'direct' | 'group' | 'sector' | 'task'; // Match database enum
+  type: 'direct' | 'group' | 'sector' | 'task';
   description?: string;
   avatar_url?: string;
   created_by?: string;

@@ -1,228 +1,108 @@
-import React, { useState, useEffect, useRef, ImgHTMLAttributes } from "react";
-import { motion } from "framer-motion";
-import { useA11y } from "@/hooks/useA11y";
-import "@/styles/lazy-image.css";
 
-interface LazyImageProps
-  extends Omit<
-    ImgHTMLAttributes<HTMLImageElement>,
-    | "src" 
-    | "onDrag" 
-    | "onDragStart" 
-    | "onDragEnd"
-    | "onAnimationStart"
-    | "onAnimationEnd"
-    | "onAnimationIteration"
-    | "onTransitionEnd"
-    | "onTransitionStart"
-  > {
+import React, { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+
+interface LazyImageProps {
   src: string;
   alt: string;
-  placeholderSrc?: string;
-  threshold?: number;
-  fallbackSrc?: string;
+  className?: string;
+  aspectRatio?: string;
+  placeholder?: string;
   onLoad?: () => void;
   onError?: () => void;
-  blur?: boolean;
-  aspectRatio?: string;
 }
-
-const defaultPlaceholder =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlmYTZiMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhcnJlZ2FuZG8uLi48L3RleHQ+PC9zdmc+";
 
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
-  placeholderSrc = defaultPlaceholder,
-  threshold = 0.1,
-  fallbackSrc,
+  className,
+  aspectRatio = '16/9',
+  placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIgdmlld0JveD0iMCAwIDI0IDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0yMSAxOUg3VjVoMTR2MTRaTTE5IDNoLThjLTEuMS0yLTIgMC0yaDJ2MTRoOFYzWiIvPjwvc3ZnPg==',
   onLoad,
   onError,
-  blur = true,
-  aspectRatio,
-  className = "",
-  ...htmlProps
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(placeholderSrc);
+  const [isError, setIsError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
-  const { options } = useA11y();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setIsInView(true);
+          setIsVisible(true);
           observer.disconnect();
         }
       },
-      {
-        threshold,
-        rootMargin: "50px", // Start loading 50px before the image comes into view
-      }
+      { threshold: 0.1 }
     );
 
     if (imgRef.current) {
       observer.observe(imgRef.current);
     }
 
-    return () => {
-      observer.disconnect();
-    };
-  }, [threshold]);
+    return () => observer.disconnect();
+  }, []);
 
-  useEffect(() => {
-    if (!isInView) return;
-
-    const img = new Image();
-
-    img.onload = () => {
-      setCurrentSrc(src);
-      setIsLoaded(true);
-      setHasError(false);
-      onLoad?.();
-    };
-
-    img.onerror = () => {
-      setHasError(true);
-      if (fallbackSrc) {
-        setCurrentSrc(fallbackSrc);
-        setIsLoaded(true);
-      }
-      onError?.();
-    };
-
-    img.src = src;
-  }, [isInView, src, fallbackSrc, onLoad, onError]);
-
-  const imageVariants = {
-    loading: {
-      opacity: 0,
-      scale: 1.1,
-      filter: blur ? "blur(10px)" : "none",
-    },
-    loaded: {
-      opacity: 1,
-      scale: 1,
-      filter: "blur(0px)",
-    },
+  const handleLoad = () => {
+    setIsLoaded(true);
+    onLoad?.();
   };
 
-  const transition = {
-    duration: options.reduceMotion ? 0.01 : 0.6,
-    ease: [0.25, 0.1, 0.25, 1] as const, // easeOut cubic-bezier
+  const handleError = () => {
+    setIsError(true);
+    onError?.();
   };
 
-  // htmlProps are already safe since we excluded conflicting props in the interface
-
-  // Determine if this is a common aspect ratio or custom
-  const getAspectRatioClass = (ratio?: string): string => {
-    if (!ratio) return '';
-    
-    // Check for common aspect ratios
-    switch (ratio) {
-      case '1/1': return 'with-aspect-ratio-1-1';
-      case '16/9': return 'with-aspect-ratio-16-9';
-      case '4/3': return 'with-aspect-ratio-4-3';
-      case '3/2': return 'with-aspect-ratio-3-2';
-      case '2/3': return 'with-aspect-ratio-2-3';
-      default: return '';
-    }
-  };
-
-  const aspectRatioClass = getAspectRatioClass(aspectRatio);
-  
   return (
     <div
-      className={`lazy-image-container ${aspectRatioClass} ${className}`}
-      data-aspect-ratio={!aspectRatioClass && aspectRatio ? aspectRatio : undefined}
+      className={cn(
+        'relative overflow-hidden bg-muted',
+        className
+      )}
+      style={{ aspectRatio }}
     >
-      <motion.img
-        ref={imgRef}
-        src={currentSrc}
-        alt={alt}
-        className="w-full h-full object-cover"
-        variants={imageVariants}
-        initial="loading"
-        animate={isLoaded ? "loaded" : "loading"}
-        transition={transition}
-        loading="lazy"
-        decoding="async"
-        {...htmlProps}
-      />
-
-      {!isLoaded && !hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <motion.div
-            className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: options.reduceMotion ? 0 : 1,
-              repeat: options.reduceMotion ? 0 : Infinity,
-              ease: [0, 0, 1, 1] as const, // linear
-            }}
-          />
-        </div>
+      {/* Placeholder */}
+      {!isLoaded && !isError && (
+        <img
+          src={placeholder}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
+          aria-hidden="true"
+        />
       )}
 
-      {hasError && !fallbackSrc && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500">
+      {/* Loading skeleton */}
+      {!isLoaded && !isError && (
+        <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/50 to-muted animate-pulse" />
+      )}
+
+      {/* Actual image */}
+      {isVisible && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          className={cn(
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          )}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
+
+      {/* Error state */}
+      {isError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
           <div className="text-center">
-            <svg
-              className="w-12 h-12 mx-auto mb-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                clipRule="evenodd"
-              />
+            <svg className="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M21 19H7V5h14v14zM19 3h-8c-1.1 0-2 .9-2 2v14h8V3z" />
             </svg>
             <p className="text-sm">Erro ao carregar imagem</p>
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// Progressive image loading component
-export const ProgressiveImage: React.FC<{
-  lowQualitySrc: string;
-  highQualitySrc: string;
-  alt: string;
-  className?: string;
-}> = ({ lowQualitySrc, highQualitySrc, alt, className = "" }) => {
-  const [highQualityLoaded, setHighQualityLoaded] = useState(false);
-  const { options } = useA11y();
-
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setHighQualityLoaded(true);
-    img.src = highQualitySrc;
-  }, [highQualitySrc]);
-
-  return (
-    <div className={`lazy-image-container progressive-image-container ${className}`}>
-      <motion.img
-        src={lowQualitySrc}
-        alt={alt}
-        className="w-full h-full object-cover"
-        initial={{ opacity: 1 }}
-        animate={{ opacity: highQualityLoaded ? 0 : 1 }}
-        transition={{ duration: options.reduceMotion ? 0.01 : 0.3 }}
-      />
-      <motion.img
-        src={highQualitySrc}
-        alt={alt}
-        className="absolute inset-0 w-full h-full object-cover"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: highQualityLoaded ? 1 : 0 }}
-        transition={{ duration: options.reduceMotion ? 0.01 : 0.3 }}
-      />
     </div>
   );
 };
