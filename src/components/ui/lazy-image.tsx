@@ -103,17 +103,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     ease: [0.25, 0.1, 0.25, 1] as const, // easeOut cubic-bezier
   };
 
-  // Filter out motion-conflicting props
-  const {
-    onDrag,
-    onDragStart,
-    onDragEnd,
-    onDragEnter,
-    onDragLeave,
-    onDragOver,
-    onDrop,
-    ...safeHtmlProps
-  } = htmlProps;
+  // htmlProps are already safe since we excluded conflicting props in the interface
 
   return (
     <div
@@ -131,7 +121,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         transition={transition}
         loading="lazy"
         decoding="async"
-        {...safeHtmlProps}
+        {...htmlProps}
       />
 
       {!isLoaded && !hasError && (
