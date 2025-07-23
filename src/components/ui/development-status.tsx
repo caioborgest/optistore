@@ -1,13 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Construction,
   CheckCircle,
@@ -32,6 +27,13 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
   status = "development",
   onGetStarted,
 }) => {
+  const statusIconRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const featuresContainerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
   const getStatusConfig = () => {
     switch (status) {
       case "coming-soon":
@@ -67,6 +69,43 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
   const config = getStatusConfig();
   const IconComponent = config.icon;
 
+  // Apply dynamic styles using refs
+  useEffect(() => {
+    if (statusIconRef.current) {
+      statusIconRef.current.style.setProperty('--status-color', config.bgColor);
+    }
+    if (badgeRef.current) {
+      badgeRef.current.style.borderColor = config.borderColor;
+      badgeRef.current.style.backgroundColor = config.bgColor;
+      badgeRef.current.style.color = config.textColor;
+    }
+    if (featuresContainerRef.current) {
+      featuresContainerRef.current.style.backgroundColor = config.bgColor;
+      featuresContainerRef.current.style.borderColor = config.borderColor;
+    }
+    if (titleRef.current) {
+      titleRef.current.style.color = config.textColor;
+    }
+    if (buttonRef.current) {
+      buttonRef.current.style.background = `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`;
+      buttonRef.current.style.color = 'white';
+    }
+    if (progressRef.current) {
+      progressRef.current.style.background = `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`;
+    }
+    
+    // Apply styles to feature items
+    featureRefs.current.forEach((ref, index) => {
+      if (ref) {
+        ref.style.color = config.textColor;
+        const dot = ref.querySelector('.feature-dot') as HTMLElement;
+        if (dot) {
+          dot.style.backgroundColor = config.color;
+        }
+      }
+    });
+  }, [config]);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -81,28 +120,20 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
           <div className="text-center">
             {/* Status Icon */}
             <div
+              ref={statusIconRef}
               className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 animate-pulse status-indicator"
-              style={{ '--status-color': config.bgColor } as React.CSSProperties}
             >
-              <IconComponent
-                className="h-8 w-8"
-                style={{ color: config.color } as React.CSSProperties}
-              />
+              <IconComponent className="h-8 w-8" />
             </div>
 
             {/* Status Badge */}
-            <Badge
-              variant="outline"
-              className="mb-4 text-sm px-4 py-2"
-              style={{
-                borderColor: config.borderColor,
-                backgroundColor: config.bgColor,
-                color: config.textColor,
-              }}
+            <div
+              ref={badgeRef}
+              className="inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold mb-4"
             >
               <Sparkles className="h-3 w-3 mr-2" />
               {config.label}
-            </Badge>
+            </div>
 
             {/* Title and Description */}
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -115,15 +146,12 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
 
             {/* Features List */}
             <div
+              ref={featuresContainerRef}
               className="border rounded-xl p-6 mb-8"
-              style={{
-                backgroundColor: config.bgColor,
-                borderColor: config.borderColor,
-              }}
             >
               <h4
+                ref={titleRef}
                 className="font-semibold mb-4 flex items-center justify-center gap-2"
-                style={{ color: config.textColor }}
               >
                 <CheckCircle className="h-4 w-4" />
                 Funcionalidades Planejadas
@@ -132,16 +160,10 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
                 {features.map((feature, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 text-sm animate-slide-right"
-                    style={{
-                      animationDelay: `${index * 100}ms`,
-                      color: config.textColor,
-                    }}
+                    ref={(el) => (featureRefs.current[index] = el)}
+                    className={`flex items-center gap-2 text-sm animate-slide-right animation-delay-${Math.min(index * 100, 500)}`}
                   >
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: config.color }}
-                    />
+                    <div className="w-2 h-2 rounded-full feature-dot" />
                     {feature}
                   </div>
                 ))}
@@ -150,17 +172,14 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
 
             {/* Action Button */}
             {onGetStarted && (
-              <Button
+              <button
+                ref={buttonRef}
                 onClick={onGetStarted}
-                className="hover-lift"
-                style={{
-                  background: `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`,
-                  color: "white",
-                }}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover-lift"
               >
                 Começar Agora
                 <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+              </button>
             )}
 
             {/* Progress Indicator */}
@@ -171,11 +190,8 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="h-2 rounded-full transition-all duration-1000 ease-out progress-fill"
-                  style={{
-                    width: "75%",
-                    background: `linear-gradient(135deg, ${config.color} 0%, ${config.textColor} 100%)`,
-                  }}
+                  ref={progressRef}
+                  className="h-2 rounded-full transition-all duration-1000 ease-out progress-fill w-3/4"
                 />
               </div>
             </div>
@@ -184,10 +200,7 @@ export const DevelopmentStatus: React.FC<DevelopmentStatusProps> = ({
       </Card>
 
       {/* Additional Info */}
-      <div
-        className="text-center text-sm text-gray-500 animate-slide-up"
-        style={{ animationDelay: "400ms" }}
-      >
+      <div className="text-center text-sm text-gray-500 animate-slide-up animation-delay-400">
         <p>
           Tem sugestões ou feedback? Entre em contato conosco para ajudar a
           moldar esta funcionalidade!
