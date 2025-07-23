@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useA11y } from "@/hooks/useA11y";
 
 interface LazyImageProps
-  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> {
+  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "onDrag" | "onDragStart" | "onDragEnd"> {
   src: string;
   alt: string;
   placeholderSrc?: string;
@@ -29,7 +29,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   blur = true,
   aspectRatio,
   className = "",
-  ...props
+  ...htmlProps
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
@@ -103,6 +103,18 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     ease: [0.25, 0.1, 0.25, 1] as const, // easeOut cubic-bezier
   };
 
+  // Filter out motion-conflicting props
+  const {
+    onDrag,
+    onDragStart,
+    onDragEnd,
+    onDragEnter,
+    onDragLeave,
+    onDragOver,
+    onDrop,
+    ...safeHtmlProps
+  } = htmlProps;
+
   return (
     <div
       className={`lazy-image-container relative overflow-hidden ${className}`}
@@ -119,7 +131,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         transition={transition}
         loading="lazy"
         decoding="async"
-        {...props}
+        {...safeHtmlProps}
       />
 
       {!isLoaded && !hasError && (
