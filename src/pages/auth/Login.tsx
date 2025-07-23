@@ -18,14 +18,12 @@ const Login = () => {
 
   // Redirecionar se já estiver autenticado
   useEffect(() => {
-    const checkAuth = async () => {
-      if (isAuthenticated && !authLoading) {
-        console.log('Usuário já autenticado, redirecionando para dashboard');
-        navigate('/', { replace: true });
-      }
-    };
+    console.log('Login component mounted, checking auth status:', { isAuthenticated, authLoading });
     
-    checkAuth();
+    if (isAuthenticated && !authLoading) {
+      console.log('User is authenticated, redirecting to dashboard');
+      navigate('/', { replace: true });
+    }
   }, [isAuthenticated, authLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -33,20 +31,54 @@ const Login = () => {
     setLoading(true);
     
     try {
+      console.log('Attempting login with:', { email });
       const result = await signIn(email, password);
+      
       if (result.error) {
+        console.error('Login error:', result.error);
         toast({
           title: 'Erro no login',
           description: result.error,
           variant: 'destructive'
         });
       } else {
+        console.log('Login successful, redirecting to dashboard');
         // Login bem-sucedido, redirecionar imediatamente
         navigate('/', { replace: true });
       }
     } catch (error) {
+      console.error('Unexpected login error:', error);
       toast({
         title: 'Erro no login',
+        description: 'Ocorreu um erro inesperado',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Usuário de teste para desenvolvimento
+  const loginAsTestUser = async () => {
+    setEmail('admin@optiflow.com');
+    setPassword('password123');
+    
+    try {
+      setLoading(true);
+      const result = await signIn('admin@optiflow.com', 'password123');
+      
+      if (result.error) {
+        toast({
+          title: 'Erro no login de teste',
+          description: result.error,
+          variant: 'destructive'
+        });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro no login de teste',
         description: 'Ocorreu um erro inesperado',
         variant: 'destructive'
       });
@@ -109,6 +141,18 @@ const Login = () => {
               )}
             </Button>
           </form>
+
+          <div className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              className="w-full"
+              onClick={loginAsTestUser}
+              disabled={loading}
+            >
+              Entrar como usuário de teste
+            </Button>
+          </div>
 
           <div className="mt-8 text-center space-y-4">
             <Link 
