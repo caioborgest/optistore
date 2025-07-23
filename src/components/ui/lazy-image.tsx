@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, ImgHTMLAttributes } from 'react';
-import { motion } from 'framer-motion';
-import { useA11y } from '@/hooks/useA11y';
+import React, { useState, useEffect, useRef, ImgHTMLAttributes } from "react";
+import { motion } from "framer-motion";
+import { useA11y } from "@/hooks/useA11y";
 
-interface LazyImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
+interface LazyImageProps
+  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> {
   src: string;
   alt: string;
   placeholderSrc?: string;
@@ -14,7 +15,8 @@ interface LazyImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'
   aspectRatio?: string;
 }
 
-const defaultPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlmYTZiMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhcnJlZ2FuZG8uLi48L3RleHQ+PC9zdmc+';
+const defaultPlaceholder =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlmYTZiMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhcnJlZ2FuZG8uLi48L3RleHQ+PC9zdmc+";
 
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,
@@ -26,7 +28,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   onError,
   blur = true,
   aspectRatio,
-  className = '',
+  className = "",
   ...props
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -44,9 +46,9 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           observer.disconnect();
         }
       },
-      { 
+      {
         threshold,
-        rootMargin: '50px' // Start loading 50px before the image comes into view
+        rootMargin: "50px", // Start loading 50px before the image comes into view
       }
     );
 
@@ -63,7 +65,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     if (!isInView) return;
 
     const img = new Image();
-    
+
     img.onload = () => {
       setCurrentSrc(src);
       setIsLoaded(true);
@@ -84,27 +86,27 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   }, [isInView, src, fallbackSrc, onLoad, onError]);
 
   const imageVariants = {
-    loading: { 
+    loading: {
       opacity: 0,
       scale: 1.1,
-      filter: blur ? 'blur(10px)' : 'none'
+      filter: blur ? "blur(10px)" : "none",
     },
-    loaded: { 
+    loaded: {
       opacity: 1,
       scale: 1,
-      filter: 'blur(0px)'
-    }
+      filter: "blur(0px)",
+    },
   };
 
   const transition = {
     duration: options.reduceMotion ? 0.01 : 0.6,
-    ease: 'easeOut'
+    ease: [0.25, 0.1, 0.25, 1] as const, // easeOut cubic-bezier
   };
 
   return (
-    <div 
+    <div
       className={`lazy-image-container relative overflow-hidden ${className}`}
-      style={{ aspectRatio } as React.CSSProperties}
+      style={aspectRatio ? { aspectRatio } : undefined}
     >
       <motion.img
         ref={imgRef}
@@ -119,26 +121,34 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         decoding="async"
         {...props}
       />
-      
+
       {!isLoaded && !hasError && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <motion.div
             className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"
             animate={{ rotate: 360 }}
-            transition={{ 
-              duration: options.reduceMotion ? 0 : 1, 
+            transition={{
+              duration: options.reduceMotion ? 0 : 1,
               repeat: options.reduceMotion ? 0 : Infinity,
-              ease: "linear" 
+              ease: [0, 0, 1, 1] as const, // linear
             }}
           />
         </div>
       )}
-      
+
       {hasError && !fallbackSrc && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500">
           <div className="text-center">
-            <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+            <svg
+              className="w-12 h-12 mx-auto mb-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                clipRule="evenodd"
+              />
             </svg>
             <p className="text-sm">Erro ao carregar imagem</p>
           </div>
@@ -154,7 +164,7 @@ export const ProgressiveImage: React.FC<{
   highQualitySrc: string;
   alt: string;
   className?: string;
-}> = ({ lowQualitySrc, highQualitySrc, alt, className = '' }) => {
+}> = ({ lowQualitySrc, highQualitySrc, alt, className = "" }) => {
   const [highQualityLoaded, setHighQualityLoaded] = useState(false);
   const { options } = useA11y();
 

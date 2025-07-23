@@ -7,7 +7,7 @@ interface VirtualListItemProps {
   role?: string;
 }
 
-const VirtualListItem: React.FC<VirtualListItemProps> = ({ height, children, role }) => {
+const VirtualListItem: React.FC<VirtualListItemProps> = ({ height, children, role = "listitem" }) => {
   const itemRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,6 +21,7 @@ const VirtualListItem: React.FC<VirtualListItemProps> = ({ height, children, rol
       ref={itemRef}
       className="virtual-list-item"
       role={role}
+      tabIndex={-1}
     >
       {children}
     </div>
@@ -128,12 +129,50 @@ export function VirtualList<T>({
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      const itemHeight = typeof itemHeight === 'function' ? 50 : itemHeight; // Use average height for keyboard navigation
+      
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          container.scrollTop += itemHeight;
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          container.scrollTop -= itemHeight;
+          break;
+        case 'PageDown':
+          event.preventDefault();
+          container.scrollTop += height;
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          container.scrollTop -= height;
+          break;
+        case 'Home':
+          event.preventDefault();
+          container.scrollTop = 0;
+          break;
+        case 'End':
+          event.preventDefault();
+          container.scrollTop = container.scrollHeight;
+          break;
+      }
+    };
+
     const container = containerRef.current;
     if (container) {
       container.addEventListener("scroll", handleScroll, { passive: true });
-      return () => container.removeEventListener("scroll", handleScroll);
+      container.addEventListener("keydown", handleKeyDown);
+      return () => {
+        container.removeEventListener("scroll", handleScroll);
+        container.removeEventListener("keydown", handleKeyDown);
+      };
     }
-  }, [onScroll]);
+  }, [onScroll, height, itemHeight]);
 
   const visibleItems = items.slice(startIndex, endIndex + 1);
 
@@ -143,14 +182,18 @@ export function VirtualList<T>({
       className={`virtual-list-container overflow-auto ${className}`}
       role="list"
       aria-label={`Lista virtual com ${items.length} itens`}
+      aria-rowcount={items.length}
+      tabIndex={0}
     >
       <div
         ref={contentRef}
         className="virtual-list-content relative"
+        role="presentation"
       >
         <div
           ref={itemsRef}
           className="virtual-list-items"
+          role="presentation"
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
@@ -158,7 +201,6 @@ export function VirtualList<T>({
               <VirtualListItem
                 key={actualIndex}
                 height={getItemHeight(actualIndex)}
-                role="listitem"
               >
                 {renderItem(item, actualIndex)}
               </VirtualListItem>
