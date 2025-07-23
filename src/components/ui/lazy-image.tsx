@@ -3,7 +3,18 @@ import { motion } from "framer-motion";
 import { useA11y } from "@/hooks/useA11y";
 
 interface LazyImageProps
-  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "onDrag" | "onDragStart" | "onDragEnd"> {
+  extends Omit<
+    ImgHTMLAttributes<HTMLImageElement>,
+    | "src" 
+    | "onDrag" 
+    | "onDragStart" 
+    | "onDragEnd"
+    | "onAnimationStart"
+    | "onAnimationEnd"
+    | "onAnimationIteration"
+    | "onTransitionEnd"
+    | "onTransitionStart"
+  > {
   src: string;
   alt: string;
   placeholderSrc?: string;
