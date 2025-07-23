@@ -1,4 +1,3 @@
-
 // Database types that match the actual Supabase schema
 export interface Company {
   id: string;
@@ -29,26 +28,28 @@ export interface UserProfile {
   updated_at: string;
 }
 
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  sector: string;
-  assigned_to?: string;
-  created_by?: string;
+  status: TaskStatus;
+  priority: 'low' | 'medium' | 'high';
   due_date?: string;
-  completed_at?: string;
-  is_recurring?: boolean;
-  recurrence_pattern?: any;
   created_at: string;
   updated_at: string;
+  created_by: string;
+  assigned_to?: string;
+  company_id: string;
   estimated_hours?: number;
   actual_hours?: number;
+  completed_at?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: string;
   parent_task_id?: string;
-  tags?: string[];
-  location?: string;
+  attachments?: string[];
+  sector?: string;
 }
 
 export interface Chat {

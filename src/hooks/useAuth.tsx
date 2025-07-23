@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile, Company } from '@/types/database';
-import { AuthService } from '@/services/authService';
+import { authService } from '@/services/authService';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       setLoading(true);
-      const { user, company, error } = await AuthService.getCurrentUser();
+      const { user, company, error } = await authService.getCurrentUser();
       
       if (error) {
         console.log('Usuário não autenticado:', error);
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { user, company, error } = await AuthService.signIn(email, password);
+      const { user, company, error } = await authService.signIn(email, password);
       
       if (error) {
         return { error };
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const { user, error } = await AuthService.signUp(email, password, name);
+      const { user, error } = await authService.signUp(email, password, name);
       
       if (error) {
         return { error };
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await AuthService.signOut();
+      await authService.signOut();
       setUser(null);
       setCompany(null);
       
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     try {
-      const { user, error } = await AuthService.updateProfile(updates);
+      const { user, error } = await authService.updateProfile(updates);
       
       if (error) {
         toast({
@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const registerCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { company, error } = await AuthService.registerCompany(companyData);
+      const { company, error } = await authService.registerCompany(companyData);
       
       if (error) {
         return { error };
@@ -172,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const registerWithInvite = async (inviteCode: string, userData?: { name: string; email: string; password: string }) => {
     try {
-      const { user, company, error } = await AuthService.registerWithInvite(inviteCode, userData);
+      const { user, company, error } = await authService.registerWithInvite(inviteCode, userData);
       
       if (error) {
         return { error };

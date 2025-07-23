@@ -1,9 +1,57 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile } from '@/types/database';
+import { UserProfile, Company } from '@/types/database';
 
 export const authService = {
-  async login(email: string, password: string) {
+  async getCurrentUser() {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return { user: null, company: null, error: 'Usuário não autenticado' };
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        return { user: null, company: null, error: profileError.message };
+      }
+
+      const userProfile: UserProfile = {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role || 'colaborador',
+        is_company_admin: profile.is_company_admin,
+        company_id: profile.company_id,
+        avatar_url: profile.avatar_url,
+        is_active: profile.is_active !== false,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at
+      };
+
+      let company = null;
+      if (profile.company_id) {
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', profile.company_id)
+          .single();
+        
+        company = companyData;
+      }
+
+      return { user: userProfile, company, error: null };
+    } catch (error: any) {
+      return { user: null, company: null, error: error.message };
+    }
+  },
+
+  async signIn(email: string, password: string) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -11,150 +59,65 @@ export const authService = {
       });
 
       if (error) {
-        throw error;
+        return { user: null, company: null, error: error.message };
       }
 
-      // Fetch user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const userProfile: UserProfile = {
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        role: 'colaborador',
-        is_active: true,
-        is_company_admin: profile.is_company_admin,
-        avatar_url: profile.avatar_url,
-        company_id: profile.company_id,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
-      };
-
-      return { user: userProfile, session: data.session };
+      return await this.getCurrentUser();
     } catch (error: any) {
-      throw new Error(error.message || 'Erro ao fazer login');
+      return { user: null, company: null, error: error.message };
     }
   },
 
-  async register(userData: {
-    name: string;
-    email: string;
-    password: string;
-    company_id?: string;
-    is_company_admin?: boolean;
-  }) {
+  async signUp(email: string, password: string, name: string) {
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
       });
 
       if (error) {
-        throw error;
+        return { user: null, error: error.message };
       }
 
       if (data.user) {
-        // Create user profile
-        const { data: profile, error: profileError } = await supabase
+        const { error: profileError } = await supabase
           .from('users')
-          .insert({
+          .insert([{
             id: data.user.id,
-            name: userData.name,
-            email: userData.email,
-            company_id: userData.company_id,
-            is_company_admin: userData.is_company_admin || false,
-          })
-          .select()
-          .single();
+            name,
+            email,
+            role: 'colaborador',
+            is_company_admin: false,
+            is_active: true
+          }]);
 
         if (profileError) {
-          throw profileError;
+          return { user: null, error: profileError.message };
         }
-
-        const userProfile: UserProfile = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role: 'colaborador',
-          is_active: true,
-          is_company_admin: profile.is_company_admin,
-          avatar_url: profile.avatar_url,
-          company_id: profile.company_id,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-        };
-
-        return { user: userProfile, session: data.session };
       }
 
-      throw new Error('Falha ao criar usuário');
+      return await this.getCurrentUser();
     } catch (error: any) {
-      throw new Error(error.message || 'Erro ao registrar usuário');
+      return { user: null, error: error.message };
     }
   },
 
-  async getCurrentUser() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        return null;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      const userProfile: UserProfile = {
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        role: 'colaborador',
-        is_active: true,
-        is_company_admin: profile.is_company_admin,
-        avatar_url: profile.avatar_url,
-        company_id: profile.company_id,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
-      };
-
-      return userProfile;
-    } catch (error: any) {
-      throw new Error(error.message || 'Erro ao obter usuário atual');
-    }
-  },
-
-  async logout() {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-    } catch (error: any) {
-      throw new Error(error.message || 'Erro ao fazer logout');
-    }
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   },
 
   async updateProfile(updates: Partial<UserProfile>) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
+      
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        return { user: null, error: 'Usuário não autenticado' };
       }
 
       const { data, error } = await supabase
@@ -165,12 +128,48 @@ export const authService = {
         .single();
 
       if (error) {
-        throw error;
+        return { user: null, error: error.message };
       }
 
-      return data;
+      const userProfile: UserProfile = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role || 'colaborador',
+        is_company_admin: data.is_company_admin,
+        company_id: data.company_id,
+        avatar_url: data.avatar_url,
+        is_active: data.is_active !== false,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      return { user: userProfile, error: null };
     } catch (error: any) {
-      throw new Error(error.message || 'Erro ao atualizar perfil');
+      return { user: null, error: error.message };
     }
   },
+
+  async registerCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert([companyData])
+        .select()
+        .single();
+
+      if (error) {
+        return { company: null, error: error.message };
+      }
+
+      return { company: data, error: null };
+    } catch (error: any) {
+      return { company: null, error: error.message };
+    }
+  },
+
+  async registerWithInvite(inviteCode: string, userData?: { name: string; email: string; password: string }) {
+    // Implementação básica - pode ser expandida conforme necessário
+    return { user: null, company: null, error: 'Função não implementada' };
+  }
 };

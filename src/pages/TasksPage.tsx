@@ -1,24 +1,14 @@
+
 import React, { useState } from 'react';
 import { ModernTaskManager } from '@/components/tasks/ModernTaskManager';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Filter, Download, Upload } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 
 const TasksPage: React.FC = () => {
-  const { user } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-
-  // Estatísticas de exemplo para o ModernTaskManager
-  const taskStats = {
-    totalTasks: 24,
-    completedTasks: 12,
-    pendingTasks: 8,
-    overdueTasks: 4,
-    inProgressTasks: 8
-  };
 
   const handleCreateTask = () => {
     setShowCreateDialog(true);
@@ -73,16 +63,7 @@ const TasksPage: React.FC = () => {
       </div>
       
       {/* Gerenciador de Tarefas Moderno */}
-      <ModernTaskManager 
-        stats={{
-          totalTasks: taskStats.totalTasks,
-          completedTasks: taskStats.completedTasks,
-          pendingTasks: taskStats.pendingTasks,
-          overdueTasks: taskStats.overdueTasks,
-          unreadMessages: 0,
-        }}
-        onCreateTask={handleCreateTask}
-      />
+      <ModernTaskManager onCreateTask={handleCreateTask} />
       
       {/* Diálogos */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
