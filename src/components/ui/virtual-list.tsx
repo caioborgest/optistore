@@ -10,7 +10,7 @@ interface VirtualListItemProps {
 const VirtualListItem: React.FC<VirtualListItemProps> = ({
   height,
   children,
-  role = "listitem",
+  role = "option",
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +21,13 @@ const VirtualListItem: React.FC<VirtualListItemProps> = ({
   }, [height]);
 
   return (
-    <div ref={itemRef} className="virtual-list-item" role={role} tabIndex={-1}>
+    <div 
+      ref={itemRef} 
+      className="virtual-list-item" 
+      role={role} 
+      tabIndex={-1}
+      aria-selected="false"
+    >
       {children}
     </div>
   );
@@ -179,22 +185,27 @@ export function VirtualList<T>({
     <div
       ref={containerRef}
       className={`virtual-list-container overflow-auto ${className}`}
-      role="list"
+      role="listbox"
       aria-label={`Lista virtual com ${items.length} itens`}
       tabIndex={0}
     >
       <div
         ref={contentRef}
         className="virtual-list-content relative"
-        role="presentation"
+        style={{ position: 'relative' }}
       >
-        <div ref={itemsRef} className="virtual-list-items" role="presentation">
+        <div 
+          ref={itemsRef} 
+          className="virtual-list-items"
+          style={{ position: 'absolute', width: '100%' }}
+        >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
             return (
               <VirtualListItem
                 key={actualIndex}
                 height={getItemHeight(actualIndex)}
+                role="option"
               >
                 {renderItem(item, actualIndex)}
               </VirtualListItem>
