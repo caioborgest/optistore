@@ -21,7 +21,6 @@ import {
   X,
   LogOut,
   Bell,
-  Search,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -95,8 +94,14 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
     }
   ];
 
+  // Determinar papel do usuário
+  const getUserRole = () => {
+    if (userProfile?.is_company_admin) return 'gerente';
+    return userProfile?.role || 'colaborador';
+  };
+
   const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(userProfile?.role || 'colaborador')
+    item.roles.includes(getUserRole())
   );
 
   const handleLogout = async () => {
@@ -167,7 +172,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
                   </div>
                   <div>
                     <h1 className="font-bold text-xl text-gray-900">OptiFlow</h1>
-                    <p className="text-sm text-gray-500">Gestão Inteligente</p>
+                    <p className="text-sm text-gray-500">Sistema de Gestão</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={closeMobile} className="p-2">
@@ -187,7 +192,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">{userProfile?.name || 'Usuário'}</p>
-                  <p className="text-sm text-gray-500">{userProfile?.role || 'Colaborador'}</p>
+                  <p className="text-sm text-gray-500">{getUserRole()}</p>
                 </div>
                 <Badge variant="secondary" className="bg-green-100 text-green-700">
                   Online
@@ -256,7 +261,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
               </div>
               <div>
                 <h1 className="font-bold text-xl text-gray-900">OptiFlow</h1>
-                <p className="text-sm text-gray-500">Gestão Inteligente</p>
+                <p className="text-sm text-gray-500">Sistema de Gestão</p>
               </div>
             </div>
           )}
@@ -283,7 +288,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
             </Avatar>
             <div className="flex-1">
               <p className="font-semibold text-gray-900">{userProfile?.name || 'Usuário'}</p>
-              <p className="text-sm text-gray-500">{userProfile?.role || 'Colaborador'}</p>
+              <p className="text-sm text-gray-500">{getUserRole()}</p>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-700">
               Online

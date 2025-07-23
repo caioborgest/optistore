@@ -34,13 +34,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex min-h-screen">
+        {/* Sidebar sempre visível */}
         <ModernSidebar userProfile={userProfile} />
         
+        {/* Conteúdo principal com margem adequada */}
         <main className={cn(
           "flex-1 overflow-auto",
           isMobile ? "pt-16" : "ml-64"
         )}>
-          {children}
+          <div className="p-6">
+            {children}
+          </div>
         </main>
       </div>
       <PWAInstallPrompt />
