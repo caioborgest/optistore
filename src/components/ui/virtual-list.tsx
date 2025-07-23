@@ -2,34 +2,32 @@ import React, { useEffect, useRef, useState, useMemo, ReactNode } from "react";
 import "@/styles/virtual-list.css";
 
 // Helper component for virtual list items
+
 interface VirtualListItemProps {
   height: number;
   children: ReactNode;
   role?: string;
+  style?: React.CSSProperties;
 }
 
 const VirtualListItem: React.FC<VirtualListItemProps> = ({
   height,
   children,
   role = "listitem",
+  style = {},
 }) => {
-  const itemRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (itemRef.current) {
-      itemRef.current.style.height = `${height}px`;
-    }
-  }, [height]);
-
   return (
-    <div 
-      ref={itemRef} 
+    <li 
       className="virtual-list-item" 
       role={role} 
       tabIndex={-1}
+      style={{ 
+        height: `${height}px`,
+        ...style
+      }}
     >
       {children}
-    </div>
+    </li>
   );
 };
 
@@ -112,18 +110,7 @@ export function VirtualList<T>({
     return { totalHeight, startIndex, endIndex, offsetY };
   }, [items, scrollTop, height, itemHeight, overscan]);
 
-  // Apply dynamic styles using refs
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.style.height = `${height}px`;
-    }
-    if (contentRef.current) {
-      contentRef.current.style.height = `${totalHeight}px`;
-    }
-    if (itemsRef.current) {
-      itemsRef.current.style.top = `${offsetY}px`;
-    }
-  }, [height, totalHeight, offsetY]);
+  // We're now using inline styles directly in the JSX
 
   useEffect(() => {
     const handleScroll = () => {
@@ -184,32 +171,39 @@ export function VirtualList<T>({
   return (
     <div
       ref={containerRef}
-      className={`virtual-list-container overflow-auto ${className}`}
-      role="list"
-      aria-label={`Lista virtual com ${items.length} itens`}
+      className={`virtual-list-container ${className}`}
+      style={{ height: `${height}px` }}
       tabIndex={0}
     >
-      <div
-        ref={contentRef}
+      <div 
+        ref={contentRef} 
         className="virtual-list-content"
+        style={{ height: `${totalHeight}px` }}
       >
-        <div 
-          ref={itemsRef} 
-          className="virtual-list-items"
+        <ul
+          style={{ position: 'relative', margin: 0, padding: 0, listStyle: 'none' }}
+          role="list"
+          aria-label={`Lista virtual com ${items.length} itens`}
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
+            const itemTop = offsetY + visibleItems.slice(0, index).reduce(
+              (acc, _, i) => acc + getItemHeight(startIndex + i), 
+              0
+            );
+            
             return (
               <VirtualListItem
                 key={actualIndex}
                 height={getItemHeight(actualIndex)}
                 role="listitem"
+                style={{ top: `${itemTop}px` }}
               >
                 {renderItem(item, actualIndex)}
               </VirtualListItem>
             );
           })}
-        </div>
+        </ul>
       </div>
     </div>
   );

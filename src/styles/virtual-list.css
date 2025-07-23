@@ -1,17 +1,26 @@
 /* Virtual List Component Styles */
 .virtual-list-container {
   overflow: auto;
+  position: relative;
 }
 
 .virtual-list-content {
   position: relative;
-}
-
-.virtual-list-items {
-  position: absolute;
   width: 100%;
+  height: 100%;
 }
 
 .virtual-list-item {
-  position: relative;
+  position: absolute;
+  width: 100%;
+  left: 0;
+}
+
+/* Utility classes for dynamic positioning */
+.virtual-list-item-height {
+  height: var(--item-height, auto);
+}
+
+.virtual-list-item-top {
+  top: var(--item-top, 0);
 }
