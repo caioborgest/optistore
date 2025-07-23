@@ -1,12 +1,20 @@
 import React from 'react';
-import Layout from '@/components/Layout';
-import Chat from "@/components/Chat";
+import { UnderDevelopment } from '@/components/ui/under-development';
 
 const ChatPage: React.FC = () => {
   return (
-    <Layout>
-      <Chat />
-    </Layout>
+    <UnderDevelopment 
+      title="Chat Corporativo" 
+      description="Comunique-se em tempo real com sua equipe"
+      features={[
+        "Mensagens em tempo real",
+        "Compartilhamento de arquivos",
+        "Canais por departamento e projetos",
+        "Histórico completo de conversas",
+        "Notificações personalizáveis"
+      ]}
+      estimatedCompletion="Duas semanas"
+    />
   );
 };
 

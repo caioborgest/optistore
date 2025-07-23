@@ -1,24 +1,20 @@
 import React from 'react';
-import Layout from '@/components/Layout';
-import { DevelopmentStatus } from '@/components/ui/development-status';
+import { UnderDevelopment } from '@/components/ui/under-development';
 
 const UsersPage: React.FC = () => {
   return (
-    <Layout>
-      <DevelopmentStatus
-        title="Gerenciamento de Usuários"
-        description="Gerencie todos os usuários da sua empresa de forma centralizada"
-        features={[
-          'Visualizar lista de usuários',
-          'Adicionar novos usuários',
-          'Editar permissões e papéis',
-          'Gerenciar setores e departamentos',
-          'Enviar convites por email',
-          'Controle de acesso avançado'
-        ]}
-        status="development"
-      />
-    </Layout>
+    <UnderDevelopment 
+      title="Gestão de Usuários" 
+      description="Gerencie os usuários e permissões do sistema"
+      features={[
+        "Cadastro e edição de usuários",
+        "Controle de permissões e papéis",
+        "Histórico de atividades",
+        "Autenticação em dois fatores",
+        "Integração com diretório corporativo"
+      ]}
+      estimatedCompletion="Próxima semana"
+    />
   );
 };
 

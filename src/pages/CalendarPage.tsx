@@ -1,12 +1,20 @@
 import React from 'react';
-import Layout from '@/components/Layout';
-import Calendar from '@/components/Calendar';
+import { UnderDevelopment } from '@/components/ui/under-development';
 
 const CalendarPage: React.FC = () => {
   return (
-    <Layout>
-      <Calendar />
-    </Layout>
+    <UnderDevelopment 
+      title="Calendário" 
+      description="Gerencie seus eventos e prazos de forma visual"
+      features={[
+        "Visualização mensal, semanal e diária",
+        "Integração com tarefas e projetos",
+        "Lembretes e notificações automáticas",
+        "Compartilhamento de calendários entre equipes",
+        "Sincronização com Google Calendar e Outlook"
+      ]}
+      estimatedCompletion="Próxima semana"
+    />
   );
 };
 
