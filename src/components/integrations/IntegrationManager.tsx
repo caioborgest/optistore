@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { integrationService, Integration as IntegrationData } from '@/services/integrationService';
 import { 
   Settings, 
   Zap, 
@@ -20,18 +21,13 @@ import {
   AlertTriangle,
   RefreshCw,
   Plus,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 
-interface Integration {
-  id: string;
-  name: string;
-  type: 'erp' | 'ecommerce' | 'crm' | 'bi' | 'payment' | 'other';
-  status: 'active' | 'inactive' | 'error';
-  description: string;
+interface Integration extends IntegrationData {
   icon: React.ReactNode;
-  config: Record<string, any>;
-  lastSync?: string;
+  description?: string;
 }
 
 export const IntegrationManager: React.FC = () => {
@@ -39,54 +35,61 @@ export const IntegrationManager: React.FC = () => {
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data - será substituído pela integração real
-    const mockIntegrations: Integration[] = [
-      {
-        id: '1',
-        name: 'SAP ERP',
-        type: 'erp',
-        status: 'active',
-        description: 'Integração com sistema SAP para sincronização de dados',
-        icon: <Database className="h-5 w-5" />,
-        config: {
-          serverUrl: 'https://sap.empresa.com',
-          username: 'admin',
-          syncFrequency: '1h'
-        },
-        lastSync: '2024-02-15T10:30:00Z'
-      },
-      {
-        id: '2',
-        name: 'Shopify',
-        type: 'ecommerce',
-        status: 'inactive',
-        description: 'Integração com loja Shopify para produtos e pedidos',
-        icon: <ShoppingCart className="h-5 w-5" />,
-        config: {
-          storeUrl: 'https://loja.myshopify.com',
-          apiKey: '***hidden***',
-          webhookUrl: 'https://api.optiflow.com/webhooks/shopify'
-        }
-      },
-      {
-        id: '3',
-        name: 'Power BI',
-        type: 'bi',
-        status: 'error',
-        description: 'Integração com Power BI para relatórios avançados',
-        icon: <BarChart3 className="h-5 w-5" />,
-        config: {
-          tenantId: '***hidden***',
-          clientId: '***hidden***',
-          workspaceId: '***hidden***'
-        }
-      }
-    ];
-    
-    setIntegrations(mockIntegrations);
+    fetchIntegrations();
   }, []);
+
+  const fetchIntegrations = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await integrationService.getIntegrations();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Mapear dados para incluir ícones
+      const integrationsWithIcons = data.map(integration => ({
+        ...integration,
+        icon: getIconForType(integration.type),
+        description: getDescriptionForType(integration.type, integration.name)
+      }));
+      
+      setIntegrations(integrationsWithIcons);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao carregar integrações');
+      console.error('Erro ao carregar integrações:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIconForType = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'erp': return <Database className="h-5 w-5" />;
+      case 'ecommerce': return <ShoppingCart className="h-5 w-5" />;
+      case 'crm': return <Users className="h-5 w-5" />;
+      case 'bi': return <BarChart3 className="h-5 w-5" />;
+      case 'payment': return <Zap className="h-5 w-5" />;
+      default: return <Settings className="h-5 w-5" />;
+    }
+  };
+
+  const getDescriptionForType = (type: string, name: string) => {
+    switch (type.toLowerCase()) {
+      case 'erp': return `Integração com sistema ${name} para sincronização de dados`;
+      case 'ecommerce': return `Integração com loja ${name} para produtos e pedidos`;
+      case 'crm': return `Integração com CRM ${name} para gestão de clientes`;
+      case 'bi': return `Integração com ${name} para relatórios avançados`;
+      case 'payment': return `Integração com gateway de pagamento ${name}`;
+      default: return `Integração com ${name}`;
+    }
+  };
 
   const getStatusIcon = (status: Integration['status']) => {
     switch (status) {
@@ -125,39 +128,58 @@ export const IntegrationManager: React.FC = () => {
 
   const handleTestConnection = async (integration: Integration) => {
     setTestResult(null);
-    // Simulação de teste
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    if (integration.status === 'error') {
-      setTestResult('Erro: Não foi possível conectar ao servidor');
-    } else {
-      setTestResult('Conexão estabelecida com sucesso!');
+    try {
+      // Testar conexão com a integração
+      const { data, error } = await integrationService.syncData(integration.id);
+      
+      if (error) {
+        setTestResult(`Erro: ${error.message || 'Não foi possível conectar ao servidor'}`);
+      } else {
+        setTestResult('Conexão estabelecida com sucesso!');
+      }
+    } catch (err: any) {
+      setTestResult(`Erro: ${err.message || 'Ocorreu um erro ao testar a conexão'}`);
     }
   };
 
   const handleSync = async (integration: Integration) => {
-    // Simulação de sincronização
-    console.log(`Sincronizando ${integration.name}...`);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Atualizar lastSync
-    setIntegrations(prev => 
-      prev.map(int => 
-        int.id === integration.id 
-          ? { ...int, lastSync: new Date().toISOString() }
-          : int
-      )
-    );
+    try {
+      // Sincronizar dados da integração
+      const { data, error } = await integrationService.syncData(integration.id);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Atualizar a lista de integrações para refletir a sincronização
+      await fetchIntegrations();
+    } catch (err: any) {
+      console.error(`Erro ao sincronizar ${integration.name}:`, err);
+      setTestResult(`Erro na sincronização: ${err.message}`);
+    }
   };
 
-  const handleToggleStatus = (integration: Integration) => {
-    setIntegrations(prev => 
-      prev.map(int => 
-        int.id === integration.id 
-          ? { ...int, status: int.status === 'active' ? 'inactive' : 'active' }
-          : int
-      )
-    );
+  const handleToggleStatus = async (integration: Integration) => {
+    try {
+      const newStatus = integration.status === 'active' ? 'inactive' : 'active';
+      
+      // Atualizar status da integração
+      const { data, error } = await integrationService.updateIntegration(
+        integration.id, 
+        { status: newStatus }
+      );
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Atualizar a lista de integrações
+      await fetchIntegrations();
+    } catch (err: any) {
+      console.error(`Erro ao alterar status de ${integration.name}:`, err);
+      setTestResult(`Erro ao alterar status: ${err.message}`);
+    }
   };
 
   return (
@@ -175,13 +197,24 @@ export const IntegrationManager: React.FC = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="active">Ativas</TabsTrigger>
-          <TabsTrigger value="inactive">Inativas</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-        </TabsList>
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Carregando integrações...</span>
+        </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : (
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="active">Ativas</TabsTrigger>
+            <TabsTrigger value="inactive">Inativas</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -390,6 +423,7 @@ export const IntegrationManager: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      )}
 
       {testResult && (
         <Alert className={testResult.includes('Erro') ? 'border-red-200' : 'border-green-200'}>
