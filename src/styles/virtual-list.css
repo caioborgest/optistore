@@ -1,0 +1,17 @@
+/* Virtual List Component Styles */
+.virtual-list-container {
+  overflow: auto;
+}
+
+.virtual-list-content {
+  position: relative;
+}
+
+.virtual-list-items {
+  position: absolute;
+  width: 100%;
+}
+
+.virtual-list-item {
+  position: relative;
+}

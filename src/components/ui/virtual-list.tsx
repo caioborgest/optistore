@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, ReactNode } from "react";
+import "@/styles/virtual-list.css";
 
 // Helper component for virtual list items
 interface VirtualListItemProps {
@@ -10,7 +11,7 @@ interface VirtualListItemProps {
 const VirtualListItem: React.FC<VirtualListItemProps> = ({
   height,
   children,
-  role = "option",
+  role = "listitem",
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +27,6 @@ const VirtualListItem: React.FC<VirtualListItemProps> = ({
       className="virtual-list-item" 
       role={role} 
       tabIndex={-1}
-      aria-selected="false"
     >
       {children}
     </div>
@@ -185,19 +185,17 @@ export function VirtualList<T>({
     <div
       ref={containerRef}
       className={`virtual-list-container overflow-auto ${className}`}
-      role="listbox"
+      role="list"
       aria-label={`Lista virtual com ${items.length} itens`}
       tabIndex={0}
     >
       <div
         ref={contentRef}
-        className="virtual-list-content relative"
-        style={{ position: 'relative' }}
+        className="virtual-list-content"
       >
         <div 
           ref={itemsRef} 
           className="virtual-list-items"
-          style={{ position: 'absolute', width: '100%' }}
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
@@ -205,7 +203,7 @@ export function VirtualList<T>({
               <VirtualListItem
                 key={actualIndex}
                 height={getItemHeight(actualIndex)}
-                role="option"
+                role="listitem"
               >
                 {renderItem(item, actualIndex)}
               </VirtualListItem>

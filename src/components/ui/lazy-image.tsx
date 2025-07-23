@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, ImgHTMLAttributes } from "react";
 import { motion } from "framer-motion";
 import { useA11y } from "@/hooks/useA11y";
+import "@/styles/lazy-image.css";
 
 interface LazyImageProps
   extends Omit<
@@ -116,10 +117,27 @@ export const LazyImage: React.FC<LazyImageProps> = ({
 
   // htmlProps are already safe since we excluded conflicting props in the interface
 
+  // Determine if this is a common aspect ratio or custom
+  const getAspectRatioClass = (ratio?: string): string => {
+    if (!ratio) return '';
+    
+    // Check for common aspect ratios
+    switch (ratio) {
+      case '1/1': return 'with-aspect-ratio-1-1';
+      case '16/9': return 'with-aspect-ratio-16-9';
+      case '4/3': return 'with-aspect-ratio-4-3';
+      case '3/2': return 'with-aspect-ratio-3-2';
+      case '2/3': return 'with-aspect-ratio-2-3';
+      default: return '';
+    }
+  };
+
+  const aspectRatioClass = getAspectRatioClass(aspectRatio);
+  
   return (
     <div
-      className={`lazy-image-container relative overflow-hidden ${className}`}
-      style={aspectRatio ? { aspectRatio } : undefined}
+      className={`lazy-image-container ${aspectRatioClass} ${className}`}
+      data-aspect-ratio={!aspectRatioClass && aspectRatio ? aspectRatio : undefined}
     >
       <motion.img
         ref={imgRef}
@@ -188,7 +206,7 @@ export const ProgressiveImage: React.FC<{
   }, [highQualitySrc]);
 
   return (
-    <div className={`progressive-image-container relative ${className}`}>
+    <div className={`lazy-image-container progressive-image-container ${className}`}>
       <motion.img
         src={lowQualitySrc}
         alt={alt}

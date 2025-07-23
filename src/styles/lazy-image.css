@@ -1,0 +1,32 @@
+/* Lazy Image Component Styles */
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.lazy-image-container.with-aspect-ratio-1-1 {
+  aspect-ratio: 1/1;
+}
+
+.lazy-image-container.with-aspect-ratio-16-9 {
+  aspect-ratio: 16/9;
+}
+
+.lazy-image-container.with-aspect-ratio-4-3 {
+  aspect-ratio: 4/3;
+}
+
+.lazy-image-container.with-aspect-ratio-3-2 {
+  aspect-ratio: 3/2;
+}
+
+.lazy-image-container.with-aspect-ratio-2-3 {
+  aspect-ratio: 2/3;
+}
+
+/* Add more common aspect ratios as needed */
+
+/* For custom aspect ratios, we'll use a data attribute */
+.lazy-image-container[data-aspect-ratio] {
+  aspect-ratio: attr(data-aspect-ratio);
+}
