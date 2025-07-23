@@ -8,9 +8,11 @@ export const authService = {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
+        console.log('Usuário não autenticado:', authError?.message || 'Sem sessão ativa');
         return { user: null, company: null, error: 'Usuário não autenticado' };
       }
 
+      // Verificar se o usuário existe na tabela users
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -18,38 +20,61 @@ export const authService = {
         .single();
 
       if (profileError) {
-        return { user: null, company: null, error: profileError.message };
+        console.log('Perfil não encontrado:', profileError.message);
+        // Fazer logout se o perfil não existir
+        await supabase.auth.signOut();
+        return { user: null, company: null, error: 'Perfil de usuário não encontrado' };
+      }
+
+      if (!profile) {
+        console.log('Perfil não encontrado (vazio)');
+        // Fazer logout se o perfil não existir
+        await supabase.auth.signOut();
+        return { user: null, company: null, error: 'Perfil de usuário não encontrado' };
       }
 
       const userProfile: UserProfile = {
         id: profile.id,
         name: profile.name,
         email: profile.email,
-        role: 'colaborador', // Default role
-        sector: undefined,
-        phone: undefined,
+        role: profile.role || 'colaborador', // Use o papel do banco de dados
+        sector: profile.sector,
+        phone: profile.phone,
         avatar_url: profile.avatar_url,
-        is_active: true,
+        is_active: profile.is_active !== false, // Default para true se não definido
         is_company_admin: profile.is_company_admin || false,
         company_id: profile.company_id,
-        last_login: undefined,
+        last_login: profile.last_login,
         created_at: profile.created_at,
         updated_at: profile.updated_at
       };
 
+      // Atualizar último login
+      await supabase
+        .from('users')
+        .update({ 
+          last_login: new Date().toISOString() 
+        })
+        .eq('id', user.id);
+
       let company = null;
       if (profile.company_id) {
-        const { data: companyData } = await supabase
+        const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
           .eq('id', profile.company_id)
           .single();
         
-        company = companyData;
+        if (companyError) {
+          console.log('Erro ao buscar empresa:', companyError.message);
+        } else {
+          company = companyData;
+        }
       }
 
       return { user: userProfile, company, error: null };
     } catch (error: any) {
+      console.error('Erro ao verificar autenticação:', error);
       return { user: null, company: null, error: error.message };
     }
   },

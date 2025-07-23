@@ -57,8 +57,11 @@ export const ModernDashboard: React.FC<ModernDashboardProps> = ({
     return 'Boa noite';
   };
 
+  // Verificar se o usuário está definido
+  console.log('ModernDashboard rendering with user:', user);
+
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

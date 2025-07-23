@@ -31,11 +31,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return <Navigate to="/auth/login" replace />;
   }
 
+  // Garantir que userProfile tenha valores válidos
+  console.log('Layout rendering with userProfile:', userProfile);
+
   return (
     <div className="min-h-screen bg-background w-full">
       <div className="flex min-h-screen w-full">
+        {/* Sidebar */}
         <ModernSidebar userProfile={userProfile} />
         
+        {/* Conteúdo principal */}
         <main className={cn(
           "flex-1 overflow-auto",
           isMobile ? "pt-16" : "ml-64"

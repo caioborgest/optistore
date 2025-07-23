@@ -18,9 +18,14 @@ const Login = () => {
 
   // Redirecionar se já estiver autenticado
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      navigate('/', { replace: true });
-    }
+    const checkAuth = async () => {
+      if (isAuthenticated && !authLoading) {
+        console.log('Usuário já autenticado, redirecionando para dashboard');
+        navigate('/', { replace: true });
+      }
+    };
+    
+    checkAuth();
   }, [isAuthenticated, authLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {

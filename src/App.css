@@ -4,6 +4,8 @@
   margin: 0;
   padding: 0;
   text-align: left;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Estilos básicos para o aplicativo */
@@ -13,6 +15,17 @@ html, body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+}
+
+/* Garantir que o layout ocupe toda a tela */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Garantir que a sidebar seja exibida */
+.fixed.left-0.top-0.h-full {
+  display: flex !important;
+  z-index: 40;
 }
 
 /* Estilos para o logo */

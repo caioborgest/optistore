@@ -247,7 +247,8 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ userProfile }) => 
     <div className={cn(
       "fixed left-0 top-0 h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-300 z-40 flex flex-col",
       isCollapsed ? "w-16" : "w-64"
-    )}>
+    )}
+    style={{ display: 'flex !important' }} // Garantir que seja exibido
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
