@@ -1,10 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { 
   BarChart, 
   Bar, 
@@ -12,549 +17,408 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  Legend, 
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
   Area,
   AreaChart
 } from 'recharts';
 import { 
   Download, 
-  FileText, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus,
-  Calendar,
+  Filter, 
+  Calendar as CalendarIcon,
+  TrendingUp,
   Users,
-  Target,
+  CheckCircle,
   Clock,
-  Award,
-  AlertTriangle
+  AlertTriangle,
+  Target,
+  Activity,
+  BarChart3
 } from 'lucide-react';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { ReportsService, ProductivityMetrics, SectorComparison, UserPerformance } from '@/services/reportsService';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/components/ui/use-toast';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
-
-interface DateRange {
+// Local DateRange type to avoid conflicts
+interface LocalDateRange {
   from: Date;
   to: Date;
 }
 
-export const AdvancedReports: React.FC = () => {
-  const { user } = useAuth();
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date())
+interface AdvancedReportsProps {
+  className?: string;
+}
+
+export const AdvancedReports: React.FC<AdvancedReportsProps> = ({ className }) => {
+  const [dateRange, setDateRange] = useState<LocalDateRange>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date()
   });
-  const [selectedSector, setSelectedSector] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
-  const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null);
-  const [sectorComparison, setSectorComparison] = useState<SectorComparison[]>([]);
-  const [userPerformance, setUserPerformance] = useState<UserPerformance[]>([]);
-  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
+  
+  const [selectedMetric, setSelectedMetric] = useState('tasks');
+  const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedSector, setSelectedSector] = useState('all');
+  
+  // Mock data - será substituído pela integração real
+  const taskData = [
+    { name: 'Jan', completed: 45, pending: 12, overdue: 3 },
+    { name: 'Fev', completed: 52, pending: 8, overdue: 2 },
+    { name: 'Mar', completed: 48, pending: 15, overdue: 5 },
+    { name: 'Abr', completed: 61, pending: 10, overdue: 1 },
+    { name: 'Mai', completed: 55, pending: 18, overdue: 4 }
+  ];
 
-  const sectors = ['Vendas', 'Estoque', 'Atendimento', 'Administração', 'Manutenção'];
+  const sectorData = [
+    { name: 'Vendas', value: 35, color: '#3b82f6' },
+    { name: 'Marketing', value: 28, color: '#10b981' },
+    { name: 'TI', value: 25, color: '#f59e0b' },
+    { name: 'RH', value: 12, color: '#ef4444' }
+  ];
 
-  const loadReports = async () => {
-    if (!dateRange.from || !dateRange.to) return;
+  const performanceData = [
+    { name: 'Sem 1', efficiency: 85, quality: 92 },
+    { name: 'Sem 2', efficiency: 88, quality: 89 },
+    { name: 'Sem 3', efficiency: 92, quality: 95 },
+    { name: 'Sem 4', efficiency: 89, quality: 91 }
+  ];
 
-    setLoading(true);
-    try {
-      const sector = selectedSector === 'all' ? undefined : selectedSector;
+  const handleDateRangeChange = (range: LocalDateRange) => {
+    setDateRange(range);
+  };
 
-      // Carregar métricas de produtividade
-      const { data: metricsData, error: metricsError } = await ReportsService.getProductivityMetrics(
-        dateRange.from,
-        dateRange.to,
-        sector
-      );
+  const handleExportReport = () => {
+    // Implementar exportação de relatório
+    console.log('Exportando relatório...');
+  };
 
-      if (metricsError) throw metricsError;
-      setMetrics(metricsData || null);
-
-      // Carregar comparativo de setores (apenas para gerentes)
-      if (user?.role === 'gerente') {
-        const { data: sectorData, error: sectorError } = await ReportsService.getSectorComparison(
-          dateRange.from,
-          dateRange.to
-        );
-
-        if (sectorError) throw sectorError;
-        setSectorComparison(sectorData || []);
+  const getMetricCards = () => {
+    return [
+      {
+        title: 'Tarefas Concluídas',
+        value: '247',
+        change: '+12%',
+        icon: CheckCircle,
+        color: 'text-green-600'
+      },
+      {
+        title: 'Produtividade',
+        value: '89%',
+        change: '+5%',
+        icon: TrendingUp,
+        color: 'text-blue-600'
+      },
+      {
+        title: 'Tempo Médio',
+        value: '2.4h',
+        change: '-8%',
+        icon: Clock,
+        color: 'text-purple-600'
+      },
+      {
+        title: 'Taxa de Conclusão',
+        value: '94%',
+        change: '+3%',
+        icon: Target,
+        color: 'text-orange-600'
       }
-
-      // Carregar performance dos usuários
-      const { data: performanceData, error: performanceError } = await ReportsService.getUserPerformance(
-        dateRange.from,
-        dateRange.to,
-        sector
-      );
-
-      if (performanceError) throw performanceError;
-      setUserPerformance(performanceData || []);
-
-      // Carregar dados de série temporal
-      const { data: timeData, error: timeError } = await ReportsService.getTimeSeriesData(
-        dateRange.from,
-        dateRange.to,
-        sector
-      );
-
-      if (timeError) throw timeError;
-      setTimeSeriesData(timeData || []);
-
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao carregar relatórios',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+    ];
   };
-
-  useEffect(() => {
-    loadReports();
-  }, [dateRange, selectedSector]);
-
-  const handleExportCSV = async (data: any[], filename: string) => {
-    const { success, error } = await ReportsService.exportToCSV(data, filename);
-    
-    if (success) {
-      toast({
-        title: 'Exportação concluída',
-        description: `Arquivo ${filename}.csv baixado com sucesso`,
-      });
-    } else {
-      toast({
-        title: 'Erro na exportação',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleExportPDF = async () => {
-    if (!metrics || !sectorComparison) return;
-
-    const filename = `relatorio-produtividade-${format(new Date(), 'yyyy-MM-dd')}`;
-    const { success, error } = await ReportsService.exportToPDF(metrics, sectorComparison, filename);
-    
-    if (success) {
-      toast({
-        title: 'Relatório PDF gerado',
-        description: 'Download iniciado automaticamente',
-      });
-    } else {
-      toast({
-        title: 'Erro ao gerar PDF',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const renderMetricsOverview = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{metrics?.totalTasks || 0}</div>
-          <p className="text-xs text-muted-foreground">
-            {metrics?.completedTasks || 0} concluídas
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
-          <Award className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {metrics?.completionRate.toFixed(1) || 0}%
-          </div>
-          <p className="text-xs text-muted-foreground">
-            do período selecionado
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {metrics?.averageCompletionTime.toFixed(1) || 0}h
-          </div>
-          <p className="text-xs text-muted-foreground">
-            para conclusão
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tarefas Atrasadas</CardTitle>
-          <AlertTriangle className="h-4 w-4 text-destructive" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-destructive">
-            {metrics?.overdueTasks || 0}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            requerem atenção
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderProductivityChart = () => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Produtividade ao Longo do Tempo</CardTitle>
-        <CardDescription>
-          Acompanhe a evolução das tarefas criadas e concluídas
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={timeSeriesData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={(value) => format(new Date(value), 'dd/MM')}
-            />
-            <YAxis />
-            <Tooltip 
-              labelFormatter={(value) => format(new Date(value), 'dd/MM/yyyy', { locale: ptBR })}
-            />
-            <Legend />
-            <Area 
-              type="monotone" 
-              dataKey="created" 
-              stackId="1" 
-              stroke="#8884d8" 
-              fill="#8884d8" 
-              name="Criadas"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="completed" 
-              stackId="1" 
-              stroke="#82ca9d" 
-              fill="#82ca9d" 
-              name="Concluídas"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="overdue" 
-              stackId="1" 
-              stroke="#ff7c7c" 
-              fill="#ff7c7c" 
-              name="Atrasadas"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-
-  const renderSectorComparison = () => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Comparativo por Setor</CardTitle>
-        <CardDescription>
-          Performance e eficiência de cada setor
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {sectorComparison.map((sector, index) => (
-            <div key={sector.sector} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">#{index + 1}</Badge>
-                  <span className="font-medium">{sector.sector}</span>
-                  {getTrendIcon(sector.trend)}
-                </div>
-              </div>
-              <div className="flex items-center gap-6 text-sm">
-                <div className="text-center">
-                  <div className="font-bold">{sector.totalTasks}</div>
-                  <div className="text-muted-foreground">Tarefas</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold text-green-600">
-                    {sector.completionRate.toFixed(1)}%
-                  </div>
-                  <div className="text-muted-foreground">Conclusão</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold text-blue-600">
-                    {sector.efficiency.toFixed(1)}%
-                  </div>
-                  <div className="text-muted-foreground">Eficiência</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold">
-                    {sector.averageHours.toFixed(1)}h
-                  </div>
-                  <div className="text-muted-foreground">Média</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderPriorityDistribution = () => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Distribuição por Prioridade</CardTitle>
-        <CardDescription>
-          Como as tarefas estão distribuídas por nível de prioridade
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={[
-                { name: 'Baixa', value: metrics?.tasksByPriority.low || 0, color: '#00C49F' },
-                { name: 'Média', value: metrics?.tasksByPriority.medium || 0, color: '#FFBB28' },
-                { name: 'Alta', value: metrics?.tasksByPriority.high || 0, color: '#FF8042' },
-                { name: 'Urgente', value: metrics?.tasksByPriority.urgent || 0, color: '#FF4444' },
-              ]}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {[
-                { name: 'Baixa', value: metrics?.tasksByPriority.low || 0, color: '#00C49F' },
-                { name: 'Média', value: metrics?.tasksByPriority.medium || 0, color: '#FFBB28' },
-                { name: 'Alta', value: metrics?.tasksByPriority.high || 0, color: '#FF8042' },
-                { name: 'Urgente', value: metrics?.tasksByPriority.urgent || 0, color: '#FF4444' },
-              ].map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-
-  const renderUserPerformance = () => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Performance Individual</CardTitle>
-        <CardDescription>
-          Ranking dos colaboradores por produtividade
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {userPerformance.slice(0, 10).map((user) => (
-            <div key={user.userId} className="flex items-center justify-between p-3 border rounded-lg">
-              <div className="flex items-center gap-3">
-                <Badge variant={user.rank <= 3 ? 'default' : 'outline'}>
-                  #{user.rank}
-                </Badge>
-                <div>
-                  <div className="font-medium">{user.userName}</div>
-                  <div className="text-sm text-muted-foreground">{user.sector}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="text-center">
-                  <div className="font-bold">{user.tasksCompleted}</div>
-                  <div className="text-muted-foreground">Concluídas</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold text-green-600">
-                    {user.averageRating.toFixed(1)}%
-                  </div>
-                  <div className="text-muted-foreground">Taxa</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold text-blue-600">
-                    {user.efficiency.toFixed(1)}%
-                  </div>
-                  <div className="text-muted-foreground">Eficiência</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold">
-                    {user.hoursWorked.toFixed(1)}h
-                  </div>
-                  <div className="text-muted-foreground">Horas</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
-    <div className="space-y-6">
-      {/* Controles de Filtro */}
+    <div className={cn("space-y-6", className)}>
+      {/* Header com filtros */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Relatórios Avançados</h2>
+          <p className="text-muted-foreground">Análise detalhada de performance e métricas</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtros
+          </Button>
+          <Button onClick={handleExportReport} size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
+      </div>
+
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart className="h-5 w-5" />
-            Relatórios Avançados de Produtividade
-          </CardTitle>
-          <CardDescription>
-            Análise detalhada da performance operacional
-          </CardDescription>
+          <CardTitle>Filtros de Análise</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <DatePickerWithRange
-                date={dateRange}
-                onDateChange={setDateRange}
-              />
-            </div>
-
-            {(user?.role === 'gerente' || user?.role === 'supervisor') && (
-              <Select value={selectedSector} onValueChange={setSelectedSector}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Selecionar setor" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="metric">Métrica</Label>
+              <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a métrica" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os setores</SelectItem>
-                  {sectors.map((sector) => (
-                    <SelectItem key={sector} value={sector}>
-                      {sector}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="tasks">Tarefas</SelectItem>
+                  <SelectItem value="users">Usuários</SelectItem>
+                  <SelectItem value="performance">Performance</SelectItem>
+                  <SelectItem value="productivity">Produtividade</SelectItem>
                 </SelectContent>
               </Select>
-            )}
-
-            <div className="flex gap-2 ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExportCSV(userPerformance, 'performance-usuarios')}
-                disabled={loading}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={loading}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+            </div>
+            
+            <div>
+              <Label htmlFor="period">Período</Label>
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Semanal</SelectItem>
+                  <SelectItem value="month">Mensal</SelectItem>
+                  <SelectItem value="quarter">Trimestral</SelectItem>
+                  <SelectItem value="year">Anual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="sector">Setor</Label>
+              <Select value={selectedSector} onValueChange={setSelectedSector}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o setor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="vendas">Vendas</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="ti">TI</SelectItem>
+                  <SelectItem value="rh">RH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label>Período Personalizado</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from && dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      <span>Selecione o período</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{
+                      from: dateRange.from,
+                      to: dateRange.to
+                    }}
+                    onSelect={(range) => {
+                      if (range?.from && range?.to) {
+                        handleDateRangeChange({ from: range.from, to: range.to });
+                      }
+                    }}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Carregando relatórios...</p>
+      {/* Cards de métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {getMetricCards().map((metric, index) => (
+          <Card key={index}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{metric.title}</p>
+                  <p className="text-2xl font-bold">{metric.value}</p>
+                  <p className={cn("text-sm", metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600')}>
+                    {metric.change} vs período anterior
+                  </p>
+                </div>
+                <metric.icon className={cn("h-8 w-8", metric.color)} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Gráficos */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="tasks">Tarefas</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="sectors">Setores</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolução de Tarefas</CardTitle>
+                <CardDescription>Comparativo mensal de tarefas concluídas vs pendentes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={taskData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="completed" fill="#10b981" name="Concluídas" />
+                    <Bar dataKey="pending" fill="#f59e0b" name="Pendentes" />
+                    <Bar dataKey="overdue" fill="#ef4444" name="Atrasadas" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição por Setor</CardTitle>
+                <CardDescription>Porcentagem de tarefas por setor</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={sectorData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {sectorData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      ) : (
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="productivity">Produtividade</TabsTrigger>
-            {user?.role === 'gerente' && (
-              <TabsTrigger value="sectors">Setores</TabsTrigger>
-            )}
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
-            {renderMetricsOverview()}
-            {renderProductivityChart()}
-            {renderPriorityDistribution()}
-          </TabsContent>
-
-          <TabsContent value="productivity" className="space-y-4">
-            {renderProductivityChart()}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {renderPriorityDistribution()}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tarefas por Setor</CardTitle>
+        </TabsContent>
+        
+        <TabsContent value="tasks" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Análise Detalhada de Tarefas</CardTitle>
+              <CardDescription>Métricas avançadas de produtividade</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <AreaChart data={taskData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area 
+                    type="monotone" 
+                    dataKey="completed" 
+                    stackId="1" 
+                    stroke="#10b981" 
+                    fill="#10b981" 
+                    fillOpacity={0.6}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="pending" 
+                    stackId="1" 
+                    stroke="#f59e0b" 
+                    fill="#f59e0b" 
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="performance" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Indicadores de Performance</CardTitle>
+              <CardDescription>Eficiência e qualidade ao longo do tempo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="efficiency" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    name="Eficiência"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="quality" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    name="Qualidade"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="sectors" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sectorData.map((sector, index) => (
+              <Card key={index}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: sector.color }}
+                    />
+                    {sector.name}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={metrics?.tasksBySector || []}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="sector" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="total" fill="#8884d8" name="Total" />
-                      <Bar dataKey="completed" fill="#82ca9d" name="Concluídas" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Tarefas</span>
+                      <span className="font-semibold">{sector.value}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Conclusão</span>
+                      <span className="font-semibold">94%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Tempo Médio</span>
+                      <span className="font-semibold">2.1h</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-          {user?.role === 'gerente' && (
-            <TabsContent value="sectors" className="space-y-4">
-              {renderSectorComparison()}
-            </TabsContent>
-          )}
-
-          <TabsContent value="performance" className="space-y-4">
-            {renderUserPerformance()}
-          </TabsContent>
-        </Tabs>
-      )}
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
