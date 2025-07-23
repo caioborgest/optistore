@@ -17,13 +17,13 @@ const VirtualListItem: React.FC<VirtualListItemProps> = ({
   style = {},
 }) => {
   return (
-    <li 
-      className="virtual-list-item" 
-      role={role} 
+    <li
+      className="virtual-list-item"
+      role={role}
       tabIndex={-1}
-      style={{ 
+      style={{
         height: `${height}px`,
-        ...style
+        ...style,
       }}
     >
       {children}
@@ -175,23 +175,29 @@ export function VirtualList<T>({
       style={{ height: `${height}px` }}
       tabIndex={0}
     >
-      <div 
-        ref={contentRef} 
+      <div
+        ref={contentRef}
         className="virtual-list-content"
         style={{ height: `${totalHeight}px` }}
       >
         <ul
-          style={{ position: 'relative', margin: 0, padding: 0, listStyle: 'none' }}
+          style={{
+            position: "relative",
+            margin: 0,
+            padding: 0,
+            listStyle: "none",
+          }}
           role="list"
           aria-label={`Lista virtual com ${items.length} itens`}
         >
           {visibleItems.map((item, index) => {
             const actualIndex = startIndex + index;
-            const itemTop = offsetY + visibleItems.slice(0, index).reduce(
-              (acc, _, i) => acc + getItemHeight(startIndex + i), 
-              0
-            );
-            
+            const itemTop =
+              offsetY +
+              visibleItems
+                .slice(0, index)
+                .reduce((acc, _, i) => acc + getItemHeight(startIndex + i), 0);
+
             return (
               <VirtualListItem
                 key={actualIndex}

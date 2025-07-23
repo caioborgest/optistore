@@ -15,6 +15,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import './App.css';
 import './styles/theme.css';
 import './styles/accessibility.css';
+import './styles/fonts.css';
 
 // Lazy loaded components for better performance
 const NotFound = lazy(() => import('@/pages/NotFound'));
