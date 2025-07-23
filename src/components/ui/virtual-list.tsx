@@ -132,16 +132,16 @@ export function VirtualList<T>({
       if (!containerRef.current) return;
 
       const container = containerRef.current;
-      const itemHeight = typeof itemHeight === "function" ? 50 : itemHeight; // Use average height for keyboard navigation
+      const avgItemHeight = typeof itemHeight === "function" ? 50 : itemHeight; // Use average height for keyboard navigation
 
       switch (event.key) {
         case "ArrowDown":
           event.preventDefault();
-          container.scrollTop += itemHeight;
+          container.scrollTop += avgItemHeight;
           break;
         case "ArrowUp":
           event.preventDefault();
-          container.scrollTop -= itemHeight;
+          container.scrollTop -= avgItemHeight;
           break;
         case "PageDown":
           event.preventDefault();
@@ -171,7 +171,7 @@ export function VirtualList<T>({
         container.removeEventListener("keydown", handleKeyDown);
       };
     }
-  }, [onScroll, height, itemHeight]);
+  }, [onScroll, height]);
 
   const visibleItems = items.slice(startIndex, endIndex + 1);
 
@@ -181,7 +181,6 @@ export function VirtualList<T>({
       className={`virtual-list-container overflow-auto ${className}`}
       role="list"
       aria-label={`Lista virtual com ${items.length} itens`}
-      aria-rowcount={items.length}
       tabIndex={0}
     >
       <div
