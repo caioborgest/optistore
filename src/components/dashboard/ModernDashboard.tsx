@@ -436,8 +436,7 @@ export const ModernDashboard: React.FC<ModernDashboardProps> = ({
             {recentActivity.map((activity, index) => (
               <div
                 key={activity.id}
-                className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors hover-lift"
-                className={`animate-slide-up animation-delay-${Math.min(
+                className={`flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors hover-lift animate-slide-up animation-delay-${Math.min(
                   600 + index * 100,
                   1000
                 )}`}
