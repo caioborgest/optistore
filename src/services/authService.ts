@@ -25,14 +25,14 @@ export const authService = {
         id: profile.id,
         name: profile.name,
         email: profile.email,
-        role: profile.role || 'colaborador',
-        sector: profile.sector,
-        phone: profile.phone,
+        role: 'colaborador', // Default role
+        sector: undefined,
+        phone: undefined,
         avatar_url: profile.avatar_url,
-        is_active: profile.is_active !== false,
+        is_active: true,
         is_company_admin: profile.is_company_admin || false,
         company_id: profile.company_id,
-        last_login: profile.last_login,
+        last_login: undefined,
         created_at: profile.created_at,
         updated_at: profile.updated_at
       };
@@ -94,8 +94,6 @@ export const authService = {
             id: data.user.id,
             name,
             email,
-            role: 'colaborador',
-            is_active: true,
             is_company_admin: false
           }]);
 
@@ -138,14 +136,14 @@ export const authService = {
         id: data.id,
         name: data.name,
         email: data.email,
-        role: data.role || 'colaborador',
-        sector: data.sector,
-        phone: data.phone,
+        role: 'colaborador',
+        sector: undefined,
+        phone: undefined,
         avatar_url: data.avatar_url,
-        is_active: data.is_active !== false,
+        is_active: true,
         is_company_admin: data.is_company_admin || false,
         company_id: data.company_id,
-        last_login: data.last_login,
+        last_login: undefined,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -175,7 +173,6 @@ export const authService = {
   },
 
   async registerWithInvite(inviteCode: string, userData?: { name: string; email: string; password: string }) {
-    // Implementação básica - pode ser expandida conforme necessário
     return { user: null, company: null, error: 'Função não implementada' };
   }
 };

@@ -5,8 +5,8 @@ import { Task } from '@/types/database';
 export interface RecurrencePattern {
   type: 'daily' | 'weekly' | 'monthly';
   interval: number;
-  daysOfWeek?: number[]; // Para semanal: [1,2,3,4,5] = seg-sex
-  dayOfMonth?: number; // Para mensal: dia específico
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
   endDate?: string;
   maxOccurrences?: number;
 }
@@ -19,14 +19,15 @@ export const RecurringTaskService = {
         .insert([{
           ...taskData,
           is_recurring: true,
-          recurrence_pattern: JSON.stringify(taskData.recurrencePattern)
+          recurrence_pattern: JSON.stringify(taskData.recurrencePattern),
+          sector: taskData.sector || 'Geral',
+          title: taskData.title || 'Tarefa Recorrente'
         }])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Gerar próximas ocorrências
       await this.generateNextOccurrences(data);
 
       return { data, error: null };
@@ -82,7 +83,6 @@ export const RecurringTaskService = {
           break;
       }
 
-      // Verificar se não passou da data limite
       if (pattern.endDate && currentDate > new Date(pattern.endDate)) {
         break;
       }
@@ -125,7 +125,6 @@ export const RecurringTaskService = {
 
   async stopRecurrence(taskId: string) {
     try {
-      // Cancelar tarefas futuras
       const { error: cancelError } = await supabase
         .from('tasks')
         .update({ status: 'cancelled' })
@@ -134,7 +133,6 @@ export const RecurringTaskService = {
 
       if (cancelError) throw cancelError;
 
-      // Marcar tarefa principal como não recorrente
       const { data, error } = await supabase
         .from('tasks')
         .update({ is_recurring: false })
